@@ -1,6 +1,6 @@
 import axios from "axios";
 //TODO:remove
-import { auditEntries, demoUsers, patients } from "../data/mockData";
+import { auditEntries, demoUsers, patients, pulseOximeterReport } from "../data/mockData";
 
 const mockReports = [
   {
@@ -39,13 +39,14 @@ const mockReports = [
     finalDiagnosis: "Moderate diffuse aeration loss, most pronounced in the right upper anterior region.",
     treatmentRecommendation: "Correlate with oxygen requirement and bedside examination findings.",
     followUpRecommendation: "Repeat lung ultrasound if respiratory support changes or clinical status worsens."
-  }
+  },
+  pulseOximeterReport
 ];
 
   
 //TODO:connect to patient db
 const API_HOSPITAL_BASE_URL =
-import.meta.env.VITE_API_BASE_URL || "http://localhost:9090";
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 //TODO:connect to patient db
 const api_hospital = axios.create({

@@ -26,9 +26,10 @@ const dataTypes = [
   },
   {
     title: "Pulse Oximeter",
-    description: "You do not have permission to use this assistant.",
-    enabled: false,
-    icon: <LockRoundedIcon />
+    description: "Accessible now. Continue to patient query and examination review.",
+    enabled: true,
+    href: "/query-pulse-oximeter",
+    icon: <MonitorHeartRoundedIcon />
   },
   {
     title: "MRI",

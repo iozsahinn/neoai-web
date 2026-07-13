@@ -104,18 +104,38 @@ function createExamination(index) {
   };
 }
 
+function generateSignalData(length = 200) {
+  const data = [];
+  for (let i = 0; i < length; i++) {
+    const sine = Math.sin(i / 10) * 5 + 95;
+    const noise = (Math.random() - 0.5) * 0.5;
+    data.push(parseFloat((sine + noise).toFixed(2)));
+  }
+  return data;
+}
+
+function createPulseOximeterExamination(index) {
+  return {
+    id: `PO_Exam_${padNumber(1000 + index)}`,
+    date: buildDateString(index),
+    signalData: generateSignalData()
+  };
+}
+
 export const patients = [
   {
     id: "PT-1001",
     name: "Aylin Yilmaz",
     age: 47,
-    examinations: Array.from({ length: 55 }, (_, index) => createExamination(index + 1))
+    examinations: Array.from({ length: 55 }, (_, index) => createExamination(index + 1)),
+    pulseOximeterExaminations: Array.from({ length: 10 }, (_, index) => createPulseOximeterExamination(index + 1))
   },
   {
     id: "PT-1002",
     name: "Kerem Demir",
     age: 55,
-    examinations: Array.from({ length: 8 }, (_, index) => createExamination(index + 101))
+    examinations: Array.from({ length: 8 }, (_, index) => createExamination(index + 101)),
+    pulseOximeterExaminations: Array.from({ length: 5 }, (_, index) => createPulseOximeterExamination(index + 201))
   }
 ];
 
@@ -210,6 +230,46 @@ export const aiRegionResults = {
     }
   }
 };
+
+export const pulseOximeterReport = {
+  id: "REP-PO-2001",
+  patientId: "PT-1001",
+  examinationId: "PO_Exam_1001",
+  title: "NeoAi Pulse Oximeter Assistant",
+  summary: "Analysis of the SpO2 signal reveals multiple desaturation events consistent with intermittent hypoxia.",
+  findings: [
+    "Detected 8 significant desaturation events (drop > 4%).",
+    "Average duration of desaturation events: 25 seconds.",
+    "Lowest SpO2 recorded: 82%.",
+    "Associated bradycardia detected during 3 of the events."
+  ],
+  confidence: "%92",
+  exportedFormats: ["PDF", "DOCX"],
+  reportDate: "2026-04-09 11:30",
+  institution: "NeoAI Research Hospital",
+  department: "NICU / Pulmonology",
+  requestedBy: "Dr. Elif Kaya",
+  reviewedBy: "Dr. Elif Kaya",
+  dateOfBirth: "2026-02-18",
+  gestationalAge: "34 weeks",
+  birthWeight: "2.12 kg",
+  postnatalAge: "13 days",
+  clinic: "NICU",
+  bedNumber: "B-12",
+  softwareVersion: "NeoAI PO Assistant v1.0",
+  indication: "Screening for apnea of prematurity and related events.",
+  technique: "Continuous SpO2 monitoring over a 2-hour period with AI-assisted event detection.",
+  clinicalInterpretation:
+    "The AI findings are highly suggestive of moderate intermittent hypoxia. The pattern and frequency of events warrant clinical correlation for apnea of prematurity.",
+  recommendation:
+    "Correlate with clinical observation for apnea. Consider caffeine therapy if clinically indicated. Continuous cardiorespiratory monitoring is advised.",
+  doctorCommentary:
+    "AI analysis confirms clinical suspicion. The desaturation events are clear and require intervention.",
+  finalDiagnosis: "Moderate intermittent hypoxia, likely secondary to apnea of prematurity.",
+  treatmentRecommendation: "Initiate or adjust caffeine therapy. Ensure proper positioning.",
+  followUpRecommendation: "Repeat 24-hour SpO2 monitoring to assess response to treatment."
+};
+
 
 export const auditEntries = [
   {

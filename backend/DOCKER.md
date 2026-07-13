@@ -1,9 +1,9 @@
 # Backend Docker Setup
 
-Start PostgreSQL for local backend development from the `backend` directory:
+Start the backend application and PostgreSQL database from the `backend` directory:
 
 ```powershell
-docker compose up -d
+docker compose up -d --build
 ```
 
 This starts PostgreSQL on `localhost:5432` with:

@@ -1,4 +1,18 @@
 services:
+  backend:
+    build: .
+    container_name: neoai-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/neoai_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=12345
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
+    depends_on:
+      - postgres
+
   postgres:
     image: postgres:16
     container_name: neoai-postgres
