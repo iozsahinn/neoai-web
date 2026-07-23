@@ -114,11 +114,43 @@ function generateSignalData(length = 200) {
   return data;
 }
 
+function generateEcgSignalData(length = 200) {
+  const data = [];
+  for (let i = 0; i < length; i++) {
+    const cycle = i % 20;
+    let ecg = 0;
+    if (cycle === 3) ecg = 0.25;
+    else if (cycle === 4) ecg = 0.15;
+    else if (cycle === 6) ecg = -0.2;
+    else if (cycle === 8) ecg = 1.25;
+    else if (cycle === 9) ecg = -0.4;
+    else if (cycle === 13) ecg = 0.15;
+    else if (cycle === 14) ecg = 0.35;
+    else if (cycle === 15) ecg = 0.1;
+
+    const baseline = Math.sin(i / 30) * 0.05;
+    const noise = (Math.random() - 0.5) * 0.04;
+    data.push(parseFloat((ecg + baseline + noise).toFixed(3)));
+  }
+  return data;
+}
+
 function createPulseOximeterExamination(index) {
   return {
     id: `PO_Exam_${padNumber(1000 + index)}`,
     date: buildDateString(index),
     signalData: generateSignalData()
+  };
+}
+
+function createEcgPulseOximeterExamination(index) {
+  return {
+    id: `EPO_Exam_${padNumber(1000 + index)}`,
+    date: buildDateString(index),
+    spo2SignalData: generateSignalData(200),
+    ecgSignalData: generateEcgSignalData(200),
+    avgHeartRate: 124 + (index % 15),
+    minSpo2: 82 + (index % 10)
   };
 }
 
@@ -128,14 +160,16 @@ export const patients = [
     name: "Aylin Yilmaz",
     age: 47,
     examinations: Array.from({ length: 55 }, (_, index) => createExamination(index + 1)),
-    pulseOximeterExaminations: Array.from({ length: 10 }, (_, index) => createPulseOximeterExamination(index + 1))
+    pulseOximeterExaminations: Array.from({ length: 10 }, (_, index) => createPulseOximeterExamination(index + 1)),
+    ecgPulseOximeterExaminations: Array.from({ length: 10 }, (_, index) => createEcgPulseOximeterExamination(index + 1))
   },
   {
     id: "PT-1002",
     name: "Kerem Demir",
     age: 55,
     examinations: Array.from({ length: 8 }, (_, index) => createExamination(index + 101)),
-    pulseOximeterExaminations: Array.from({ length: 5 }, (_, index) => createPulseOximeterExamination(index + 201))
+    pulseOximeterExaminations: Array.from({ length: 5 }, (_, index) => createPulseOximeterExamination(index + 201)),
+    ecgPulseOximeterExaminations: Array.from({ length: 5 }, (_, index) => createEcgPulseOximeterExamination(index + 201))
   }
 ];
 
@@ -268,6 +302,45 @@ export const pulseOximeterReport = {
   finalDiagnosis: "Moderate intermittent hypoxia, likely secondary to apnea of prematurity.",
   treatmentRecommendation: "Initiate or adjust caffeine therapy. Ensure proper positioning.",
   followUpRecommendation: "Repeat 24-hour SpO2 monitoring to assess response to treatment."
+};
+
+export const ecgPulseOximeterReport = {
+  id: "REP-EPO-3001",
+  patientId: "PT-1001",
+  examinationId: "EPO_Exam_1001",
+  title: "NeoAi Integrated ECG & Pulse Oximeter Assistant",
+  summary: "Synchronized multi-modal analysis shows temporal concordance between SpO2 desaturation episodes and sinus bradycardia (R-R interval prolongation).",
+  findings: [
+    "Detected 6 synchronized cardiorespiratory events where SpO2 dropped below 88% while heart rate decreased below 95 bpm.",
+    "Maximum R-R interval recorded during desaturation: 1.12 seconds.",
+    "Mean pulse transit time (PTT) variation: 145 ms during hypoxic onset.",
+    "No acute ST-segment elevation or malignant ventricular arrhythmias identified."
+  ],
+  confidence: "%95",
+  exportedFormats: ["PDF", "DOCX"],
+  reportDate: "2026-04-10 14:15",
+  institution: "NeoAI Research Hospital",
+  department: "NICU / Pediatric Cardiology & Pulmonology",
+  requestedBy: "Dr. Elif Kaya",
+  reviewedBy: "Dr. Elif Kaya",
+  dateOfBirth: "2026-02-18",
+  gestationalAge: "34 weeks",
+  birthWeight: "2.12 kg",
+  postnatalAge: "14 days",
+  clinic: "NICU",
+  bedNumber: "B-12",
+  softwareVersion: "NeoAI ECG+PO Assistant v1.0",
+  indication: "Cardiorespiratory monitoring for sync-apnea and bradycardia of prematurity.",
+  technique: "Continuous 2-channel synchronous ECG (Lead II) and SpO2 recording over a 2-hour window with multi-modal AI event alignment.",
+  clinicalInterpretation:
+    "Strong evidence of reflex bradycardia secondary to hypoxemia. The synchronized ECG-SpO2 pattern confirms central/mixed hypoxic episodes with transient vagal activation.",
+  recommendation:
+    "Maintain continuous multi-parameter monitoring. Consider positional adjustments and oxygen therapy titration. Evaluate for caffeine citrate therapy adjustment.",
+  doctorCommentary:
+    "Multi-modal AI alignment clearly demonstrates the temporal relationship between SpO2 drops and heart rate deceleration. Excellent diagnostic clarity.",
+  finalDiagnosis: "Hypoxia-induced sinus bradycardia secondary to apnea of prematurity.",
+  treatmentRecommendation: "Adjust respiratory support, optimize caffeine dosage, and monitor cardiorespiratory stability.",
+  followUpRecommendation: "Repeat synchronized 24-hour ECG & SpO2 recording in 48 hours."
 };
 
 

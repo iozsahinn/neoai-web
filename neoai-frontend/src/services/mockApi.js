@@ -1,6 +1,6 @@
 import axios from "axios";
 //TODO:remove
-import { auditEntries, demoUsers, patients, pulseOximeterReport } from "../data/mockData";
+import { auditEntries, demoUsers, ecgPulseOximeterReport, patients, pulseOximeterReport } from "../data/mockData";
 
 const mockReports = [
   {
@@ -40,7 +40,8 @@ const mockReports = [
     treatmentRecommendation: "Correlate with oxygen requirement and bedside examination findings.",
     followUpRecommendation: "Repeat lung ultrasound if respiratory support changes or clinical status worsens."
   },
-  pulseOximeterReport
+  pulseOximeterReport,
+  ecgPulseOximeterReport
 ];
 
   
