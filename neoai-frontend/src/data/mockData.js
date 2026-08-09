@@ -106,10 +106,29 @@ function createExamination(index) {
 
 function generateSignalData(length = 200) {
   const data = [];
+  const beatPeriod = 22; // ~110 bpm cardiac cycle at 250 Hz sampling
+
   for (let i = 0; i < length; i++) {
-    const sine = Math.sin(i / 10) * 5 + 95;
-    const noise = (Math.random() - 0.5) * 0.5;
-    data.push(parseFloat((sine + noise).toFixed(2)));
+    const phase = (i % beatPeriod) / beatPeriod; // Phase 0.0 to 1.0 per heart beat
+
+    // 1. Systolic Peak: Rapid steep cardiac ejection climb to main peak at phase ~0.22
+    const systolicPeak = Math.exp(-Math.pow((phase - 0.22) / 0.07, 2)) * 1.0;
+
+    // 2. Dicrotic Notch: Aortic valve closure rebound reflection notch at phase ~0.46
+    const dicroticNotch = Math.exp(-Math.pow((phase - 0.46) / 0.06, 2)) * 0.38;
+
+    // 3. Diastolic Runoff: Smooth exponential relaxation runoff back to baseline
+    const diastolicRunoff = Math.exp(-phase * 1.8) * 0.12;
+
+    // Composite physiological PPG pulse wave
+    const ppgPulse = systolicPeak + dicroticNotch + diastolicRunoff;
+
+    // Low-frequency respiratory baseline modulation & subtle sensor noise
+    const respiratoryWander = Math.sin((i / 200) * 2 * Math.PI * 2) * 0.06;
+    const noise = (Math.random() - 0.5) * 0.02;
+
+    const val = ppgPulse + respiratoryWander + noise;
+    data.push(parseFloat(val.toFixed(3)));
   }
   return data;
 }
