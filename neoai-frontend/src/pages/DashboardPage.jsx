@@ -32,13 +32,14 @@ const dataTypes = [
     icon: <MonitorHeartRoundedIcon />
   },
   {
-    title: "MRI",
-    description: "You do not have permission to use this assistant.",
-    enabled: false,
-    icon: <LockRoundedIcon />
+    title: "ECG + Pulse Oximeter",
+    description: "Integrated synchronous ECG & SpO2 multi-modal analysis.",
+    enabled: true,
+    href: "/query-ecg-pulse-oximeter",
+    icon: <MonitorHeartRoundedIcon />
   },
   {
-    title: "ECG",
+    title: "MRI",
     description: "You do not have permission to use this assistant.",
     enabled: false,
     icon: <LockRoundedIcon />

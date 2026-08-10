@@ -17,10 +17,48 @@ const stepOrder = [
   { key: "reporting", label: "Reporting" }
 ];
 
-function buildStepHref(stepKey, context) {
+function buildStepHref(stepKey, context, pathname = "") {
   const patientId = context?.patientId;
   const examinationId = context?.examinationId;
   const reportId = context?.reportId || "REP-2001";
+  const isEcgPo = pathname.includes("-ecg-pulse-oximeter") || examinationId?.startsWith("EPO_");
+  const isPo = !isEcgPo && (pathname.includes("-pulse-oximeter") || examinationId?.startsWith("PO_"));
+
+  if (isEcgPo) {
+    switch (stepKey) {
+      case "query":
+        return "/query-ecg-pulse-oximeter";
+      case "selection":
+      case "preprocessing":
+        return patientId && examinationId ? `/preprocessing-ecg-pulse-oximeter/${patientId}/${examinationId}` : "/query-ecg-pulse-oximeter";
+      case "ai-module":
+        return patientId && examinationId ? `/ai-module-ecg-pulse-oximeter/${patientId}/${examinationId}` : "/query-ecg-pulse-oximeter";
+      case "results":
+        return `/results-ecg-pulse-oximeter/${reportId}`;
+      case "reporting":
+        return `/report/${reportId}`;
+      default:
+        return "/query-ecg-pulse-oximeter";
+    }
+  }
+
+  if (isPo) {
+    switch (stepKey) {
+      case "query":
+        return "/query-pulse-oximeter";
+      case "selection":
+      case "preprocessing":
+        return patientId && examinationId ? `/preprocessing-pulse-oximeter/${patientId}/${examinationId}` : "/query-pulse-oximeter";
+      case "ai-module":
+        return patientId && examinationId ? `/ai-module-pulse-oximeter/${patientId}/${examinationId}` : "/query-pulse-oximeter";
+      case "results":
+        return `/results-pulse-oximeter/${reportId}`;
+      case "reporting":
+        return `/report/${reportId}`;
+      default:
+        return "/query-pulse-oximeter";
+    }
+  }
 
   switch (stepKey) {
     case "query":
@@ -82,7 +120,7 @@ export function WorkflowSteps({ currentStep, context }) {
       {stepOrder.map((step, index) => {
         const isCurrent = step.key === currentStep;
         const isAllowed = index <= maxVisitedIndex;
-        const href = buildStepHref(step.key, effectiveContext);
+        const href = buildStepHref(step.key, effectiveContext, location.pathname);
 
         return isAllowed ? (
           <Link
