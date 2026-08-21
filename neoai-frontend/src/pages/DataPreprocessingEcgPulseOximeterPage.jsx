@@ -57,6 +57,7 @@ import {
   computeClinicalSqiMetrics
 } from "../utils/spo2FilterUtils";
 import { useDualSignalWorker } from "../hooks/useDualSignalWorker";
+import { HumanBodyAcquisitionMap } from "../components/HumanBodyAcquisitionMap";
 
 export function DataPreprocessingEcgPulseOximeterPage() {
   const { patientId, examinationId } = useParams();
@@ -558,111 +559,131 @@ export function DataPreprocessingEcgPulseOximeterPage() {
         </Grid>
       </Paper>
 
-      {/* Main Multi-Channel Aligned Subplots (Shared Time Axis X) */}
+      {/* Main Multi-Channel Aligned Subplots with Representative Human Body Signal Acquisition Map */}
       <Grid container spacing={3}>
-        <Grid size={{ xs: 12, lg: 8 }}>
-          <Stack spacing={2.5}>
-            {/* ECG Channel Chart */}
-            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, background: "rgba(15, 23, 42, 0.6)" }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                <Typography variant="subtitle2" fontWeight={700} sx={{ color: "#38bdf8", display: "flex", alignItems: "center", gap: 1 }}>
-                  Channel 1: ECG Lead II Reference Waveform (mV)
-                </Typography>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Chip label={activeEcgFilterLabel} size="small" color="primary" variant="outlined" sx={{ fontWeight: 600, height: 22, fontSize: 11 }} />
-                  <Chip label="250 Hz" size="small" color="primary" variant="outlined" sx={{ height: 22, fontSize: 11 }} />
-                </Stack>
+        <Grid size={{ xs: 12, lg: 8.5 }}>
+          <Grid container spacing={2} alignItems="stretch">
+            {/* Representative Human Body Signal Acquisition Map */}
+            <Grid size={{ xs: 12, md: 4.5, lg: 4 }}>
+              <HumanBodyAcquisitionMap
+                handSpo2Value={currentSpo2Saturation}
+                handSqi={handSqiMetrics.overallSqi}
+                footSpo2Value={footSpo2Saturation}
+                footSqi={footSqiMetrics.overallSqi}
+                ecgHr={heartRateBpm}
+              />
+            </Grid>
+
+            {/* Waveform Signal Result Graphs (Aligned Channels with Vector Arrows) */}
+            <Grid size={{ xs: 12, md: 7.5, lg: 8 }}>
+              <Stack spacing={2.5}>
+                {/* ECG Channel Chart */}
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, background: "rgba(15, 23, 42, 0.6)" }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                    <Typography variant="subtitle2" fontWeight={700} sx={{ color: "#38bdf8", display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box component="span" sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: "#38bdf8", boxShadow: "0 0 8px #38bdf8", display: "inline-block" }} />
+                      Channel 1: ECG Lead II Reference Waveform (Chest Lead Node)
+                    </Typography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Chip label={activeEcgFilterLabel} size="small" color="primary" variant="outlined" sx={{ fontWeight: 600, height: 22, fontSize: 11 }} />
+                      <Chip label="250 Hz" size="small" color="primary" variant="outlined" sx={{ height: 22, fontSize: 11 }} />
+                    </Stack>
+                  </Stack>
+
+                  <Box sx={{ width: "100%", height: 150, position: "relative", overflow: "hidden", border: "1px dashed rgba(255,255,255,0.15)", borderRadius: 1 }}>
+                    <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+                      {[25, 50, 75, 100, 125].map((y) => (
+                        <line key={y} x1="0" y1={y} x2={width} y2={y} stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" />
+                      ))}
+                      {showRawOverlay && (
+                        <polyline points={rawEcgSvgPoints} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeDasharray="4 3" />
+                      )}
+                      <polyline points={ecgSvgPoints} fill="none" stroke="#38bdf8" strokeWidth="2" />
+                    </svg>
+                  </Box>
+                </Paper>
+
+                {/* Channel 2A: Hand PPG Subplot (Upper Limb - Hand POX Target) */}
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, background: "rgba(15, 23, 42, 0.6)", borderLeft: "4px solid #4ade80" }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                    <Typography variant="subtitle2" fontWeight={700} sx={{ color: "#4ade80", display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box component="span" sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: "#4ade80", boxShadow: "0 0 8px #4ade80", display: "inline-block" }} />
+                      Channel 2A: Hand PPG Waveform (Upper Limb - Hand POX Target)
+                    </Typography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Chip
+                        label={`Hand SQI: ${handSqiMetrics.overallSqi}%`}
+                        size="small"
+                        color="success"
+                        sx={{ fontWeight: 700, height: 22, fontSize: 11 }}
+                      />
+                      <Chip
+                        label={`SpO2: ${currentSpo2Saturation}%`}
+                        size="small"
+                        color="success"
+                        variant="outlined"
+                        sx={{ fontWeight: 600, height: 22, fontSize: 11 }}
+                      />
+                    </Stack>
+                  </Stack>
+
+                  <Box sx={{ width: "100%", height: 150, position: "relative", overflow: "hidden", border: "1px dashed rgba(74, 222, 128, 0.2)", borderRadius: 1 }}>
+                    <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+                      {[25, 50, 75, 100, 125].map((y) => (
+                        <line key={y} x1="0" y1={y} x2={width} y2={y} stroke="rgba(255,255,255,0.06)" strokeDasharray="4 4" />
+                      ))}
+                      {showRawOverlay && (
+                        <polyline points={rawHandSpo2SvgPoints} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeDasharray="4 3" />
+                      )}
+                      <polyline points={handSpo2SvgPoints} fill="none" stroke="#4ade80" strokeWidth="2" />
+                    </svg>
+                  </Box>
+                </Paper>
+
+                {/* Channel 2B: Foot PPG Subplot (Lower Limb - Foot POX Target) */}
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, background: "rgba(15, 23, 42, 0.6)", borderLeft: "4px solid #c084fc" }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                    <Typography variant="subtitle2" fontWeight={700} sx={{ color: "#c084fc", display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box component="span" sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: "#c084fc", boxShadow: "0 0 8px #c084fc", display: "inline-block" }} />
+                      Channel 2B: Foot PPG Waveform (Lower Limb - Foot POX Target)
+                    </Typography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Chip
+                        label={`Foot SQI: ${footSqiMetrics.overallSqi}%`}
+                        size="small"
+                        color="secondary"
+                        sx={{ fontWeight: 700, height: 22, fontSize: 11 }}
+                      />
+                      <Chip
+                        label={`PTT Delay: ${pulseTransitTimeMs} ms`}
+                        size="small"
+                        color="info"
+                        variant="outlined"
+                        sx={{ fontWeight: 600, height: 22, fontSize: 11 }}
+                      />
+                    </Stack>
+                  </Stack>
+
+                  <Box sx={{ width: "100%", height: 150, position: "relative", overflow: "hidden", border: "1px dashed rgba(192, 132, 252, 0.2)", borderRadius: 1 }}>
+                    <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+                      {[25, 50, 75, 100, 125].map((y) => (
+                        <line key={y} x1="0" y1={y} x2={width} y2={y} stroke="rgba(255,255,255,0.06)" strokeDasharray="4 4" />
+                      ))}
+                      {showRawOverlay && (
+                        <polyline points={rawFootSpo2SvgPoints} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeDasharray="4 3" />
+                      )}
+                      <polyline points={footSpo2SvgPoints} fill="none" stroke="#c084fc" strokeWidth="2" />
+                    </svg>
+                  </Box>
+                </Paper>
               </Stack>
-
-              <Box sx={{ width: "100%", height: 150, position: "relative", overflow: "hidden", border: "1px dashed rgba(255,255,255,0.15)", borderRadius: 1 }}>
-                <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-                  {[25, 50, 75, 100, 125].map((y) => (
-                    <line key={y} x1="0" y1={y} x2={width} y2={y} stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" />
-                  ))}
-                  {showRawOverlay && (
-                    <polyline points={rawEcgSvgPoints} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeDasharray="4 3" />
-                  )}
-                  <polyline points={ecgSvgPoints} fill="none" stroke="#38bdf8" strokeWidth="2" />
-                </svg>
-              </Box>
-            </Paper>
-
-            {/* Channel 2A: Hand PPG Subplot (Upper Limb - Hand POX) */}
-            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, background: "rgba(15, 23, 42, 0.6)", borderLeft: "4px solid #4ade80" }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                <Typography variant="subtitle2" fontWeight={700} sx={{ color: "#4ade80", display: "flex", alignItems: "center", gap: 1 }}>
-                  <PanToolRoundedIcon sx={{ fontSize: 18 }} /> Channel 2A: Hand PPG Waveform (Upper Limb - Hand POX)
-                </Typography>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Chip
-                    label={`Hand SQI: ${handSqiMetrics.overallSqi}%`}
-                    size="small"
-                    color="success"
-                    sx={{ fontWeight: 700, height: 22, fontSize: 11 }}
-                  />
-                  <Chip
-                    label={`SpO2: ${currentSpo2Saturation}%`}
-                    size="small"
-                    color="success"
-                    variant="outlined"
-                    sx={{ fontWeight: 600, height: 22, fontSize: 11 }}
-                  />
-                </Stack>
-              </Stack>
-
-              <Box sx={{ width: "100%", height: 150, position: "relative", overflow: "hidden", border: "1px dashed rgba(74, 222, 128, 0.2)", borderRadius: 1 }}>
-                <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-                  {[25, 50, 75, 100, 125].map((y) => (
-                    <line key={y} x1="0" y1={y} x2={width} y2={y} stroke="rgba(255,255,255,0.06)" strokeDasharray="4 4" />
-                  ))}
-                  {showRawOverlay && (
-                    <polyline points={rawHandSpo2SvgPoints} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeDasharray="4 3" />
-                  )}
-                  <polyline points={handSpo2SvgPoints} fill="none" stroke="#4ade80" strokeWidth="2" />
-                </svg>
-              </Box>
-            </Paper>
-
-            {/* Channel 2B: Foot PPG Subplot (Lower Limb - Foot POX) */}
-            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, background: "rgba(15, 23, 42, 0.6)", borderLeft: "4px solid #c084fc" }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                <Typography variant="subtitle2" fontWeight={700} sx={{ color: "#c084fc", display: "flex", alignItems: "center", gap: 1 }}>
-                  <FootprintIcon sx={{ fontSize: 18 }} /> Channel 2B: Foot PPG Waveform (Lower Limb - Foot POX)
-                </Typography>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Chip
-                    label={`Foot SQI: ${footSqiMetrics.overallSqi}%`}
-                    size="small"
-                    color="secondary"
-                    sx={{ fontWeight: 700, height: 22, fontSize: 11 }}
-                  />
-                  <Chip
-                    label={`PTT Delay: ${pulseTransitTimeMs} ms`}
-                    size="small"
-                    color="info"
-                    variant="outlined"
-                    sx={{ fontWeight: 600, height: 22, fontSize: 11 }}
-                  />
-                </Stack>
-              </Stack>
-
-              <Box sx={{ width: "100%", height: 150, position: "relative", overflow: "hidden", border: "1px dashed rgba(192, 132, 252, 0.2)", borderRadius: 1 }}>
-                <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-                  {[25, 50, 75, 100, 125].map((y) => (
-                    <line key={y} x1="0" y1={y} x2={width} y2={y} stroke="rgba(255,255,255,0.06)" strokeDasharray="4 4" />
-                  ))}
-                  {showRawOverlay && (
-                    <polyline points={rawFootSpo2SvgPoints} fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeDasharray="4 3" />
-                  )}
-                  <polyline points={footSpo2SvgPoints} fill="none" stroke="#c084fc" strokeWidth="2" />
-                </svg>
-              </Box>
-            </Paper>
-          </Stack>
+            </Grid>
+          </Grid>
         </Grid>
 
+
         {/* Preprocessing Control Sidebar */}
-        <Grid size={{ xs: 12, lg: 4 }}>
+        <Grid size={{ xs: 12, lg: 3.5 }}>
           <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, height: "100%" }}>
             <Stack spacing={3}>
               <Box>
