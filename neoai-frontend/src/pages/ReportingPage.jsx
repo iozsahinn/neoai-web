@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { pdf } from "@react-pdf/renderer";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ReportPdfDocument } from "../components/ReportPdfDocument";
@@ -6,6 +6,7 @@ import { aiRegionResults } from "../data/mockData";
 import { useAuth } from "../context/AuthContext";
 import { findPatientById, getExaminationByIds, getReportById } from "../services/mockApi";
 import { logSimpleAction, ActionTypes, completeAction } from "../services/actionLogger";
+import { burnRectanglesOnImage } from "../utils/imageOverlayUtils";
 
 const regions = ["r1", "r2", "r3", "r4", "r5", "r6"];
 const moduleLabelMap = {
@@ -195,28 +196,87 @@ export function ReportingPage() {
     return examination?.videos?.map((video) => video.region) || [];
   }, [examination?.videos, selectedFrameMap]);
 
+  const isRdsSelected = selectedModuleIds.includes("rds-score");
+  const isBLineSelected = selectedModuleIds.includes("b-line");
+
+  const [annotatedImages, setAnnotatedImages] = useState({});
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function prepareAnnotatedImages() {
+      const entries = await Promise.all(
+        selectedRegions.map(async (region) => {
+          const frameData = selectedFrameMap[region];
+          const matchingVideo = examination?.videos?.find((video) => video.region === region);
+          const baseImg = getFrameImageSource(frameData) || matchingVideo?.thumbnail || "";
+          const rects = frameData?.rectangles || [];
+
+          if (!baseImg) {
+            return [region, ""];
+          }
+
+          if (isBLineSelected && Array.isArray(rects) && rects.length > 0) {
+            const composite = await burnRectanglesOnImage(baseImg, rects);
+            return [region, composite];
+          }
+
+          return [region, baseImg];
+        })
+      );
+
+      if (isMounted) {
+        setAnnotatedImages(Object.fromEntries(entries));
+      }
+    }
+
+    prepareAnnotatedImages();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [examination?.videos, isBLineSelected, selectedFrameMap, selectedRegions]);
+
   const regionReportRows = useMemo(
     () =>
       selectedRegions.map((region) => {
         const regionResult = aiRegionResults[region];
         const matchingVideo = examination?.videos?.find((video) => video.region === region);
+        const frameData = selectedFrameMap[region];
+        const frameIndex =
+          typeof frameData === "object" && frameData !== null && Number.isInteger(frameData.frameIndex)
+            ? frameData.frameIndex
+            : null;
+        const rawImage = getFrameImageSource(frameData) || matchingVideo?.thumbnail || "";
+        const image = annotatedImages[region] || rawImage;
+        const bLineCount = isBLineSelected
+          ? (Array.isArray(frameData?.rectangles)
+              ? frameData.rectangles.length
+              : (regionResult?.b_line_module?.count ?? 0))
+          : "-";
+        const regionScore = isRdsSelected
+          ? (typeof frameData === "object" && frameData !== null && Number.isInteger(frameData.rdsScore)
+              ? frameData.rdsScore
+              : (matchingVideo?.rdsScore ?? regionResult?.rds_score_module?.score ?? 0))
+          : "-";
 
         return {
           region,
-          image: getFrameImageSource(selectedFrameMap[region]) || matchingVideo?.thumbnail || "",
-          videoName: matchingVideo?.name || "-",
+          image,
+          frameIndex,
+          videoName: frameData?.videoName || matchingVideo?.name || "-",
           comment: matchingVideo?.comment || "-",
           imageQuality: regionResult?.image_quality || "unknown",
-          bLineCount: regionResult?.b_line_module?.count ?? 0,
-          regionScore: regionResult?.rds_score_module?.score ?? 0
+          bLineCount,
+          regionScore
         };
       }),
-    [examination?.videos, selectedFrameMap, selectedRegions]
+    [annotatedImages, examination?.videos, isBLineSelected, isRdsSelected, selectedFrameMap, selectedRegions]
   );
 
-  const totalScore = regionReportRows.reduce((sum, row) => sum + row.regionScore, 0);
-  const isRdsSelected = selectedModuleIds.includes("rds-score");
-  const isBLineSelected = selectedModuleIds.includes("b-line");
+  const totalScore = isRdsSelected
+    ? regionReportRows.reduce((sum, row) => sum + (typeof row.regionScore === "number" ? row.regionScore : 0), 0)
+    : 0;
   const overallSeverity = getOverallSeverity(totalScore);
   const diagnosisProbabilities = getDiagnosisProbabilities(totalScore);
   const highlightedRegions = regionReportRows
@@ -436,48 +496,46 @@ export function ReportingPage() {
                   <article className="report-region-card" key={row.region}>
                     <div className="report-region-frame">
                       <img alt={`${row.region.toUpperCase()} selected frame`} src={row.image} />
-                      <span className="report-region-overlay-label">{row.region.toUpperCase()}</span>
+                      <span className="report-region-overlay-label">
+                        {row.region.toUpperCase()}{row.frameIndex !== null && row.frameIndex !== undefined ? ` (Frame #${row.frameIndex + 1})` : ""}
+                      </span>
                     </div>
                     <div className="report-region-results">
-                      {isBLineSelected ? (
-                        <div className="report-module-block">
-                          <h3 className="report-module-title">{moduleLabelMap["b-line"]}</h3>
-                          <div className="report-table-wrap">
-                            <table className="report-table report-module-table">
-                              <tbody>
-                                <tr>
-                                  <th>Metric</th>
-                                  <th>Value</th>
-                                </tr>
-                                <tr>
-                                  <td>Count</td>
-                                  <td>{row.bLineCount}</td>
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
+                      <div className="report-module-block">
+                        <h3 className="report-module-title">{moduleLabelMap["b-line"]}</h3>
+                        <div className="report-table-wrap">
+                          <table className="report-table report-module-table">
+                            <tbody>
+                              <tr>
+                                <th>Metric</th>
+                                <th>Value</th>
+                              </tr>
+                              <tr>
+                                <td>Count</td>
+                                <td>{row.bLineCount}</td>
+                              </tr>
+                            </tbody>
+                          </table>
                         </div>
-                      ) : null}
+                      </div>
 
-                      {isRdsSelected ? (
-                        <div className="report-module-block">
-                          <h3 className="report-module-title">{moduleLabelMap["rds-score"]}</h3>
-                          <div className="report-table-wrap">
-                            <table className="report-table report-module-table">
-                              <tbody>
-                                <tr>
-                                  <th>Metric</th>
-                                  <th>Value</th>
-                                </tr>
-                                <tr>
-                                  <td>Score</td>
-                                  <td>{row.regionScore}</td>
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
+                      <div className="report-module-block">
+                        <h3 className="report-module-title">{moduleLabelMap["rds-score"]}</h3>
+                        <div className="report-table-wrap">
+                          <table className="report-table report-module-table">
+                            <tbody>
+                              <tr>
+                                <th>Metric</th>
+                                <th>Value</th>
+                              </tr>
+                              <tr>
+                                <td>Score</td>
+                                <td>{row.regionScore}</td>
+                              </tr>
+                            </tbody>
+                          </table>
                         </div>
-                      ) : null}
+                      </div>
                     </div>
                   </article>
                 ))}
