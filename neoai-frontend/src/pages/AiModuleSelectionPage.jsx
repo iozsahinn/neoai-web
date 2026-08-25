@@ -12,7 +12,6 @@ import { resetWorkflowAfterStep, setActiveWorkflowContext } from "../utils/workf
 
 const regions = ["r1", "r2", "r3", "r4", "r5", "r6"];
 const DEFAULT_MODULE_IDS = ["rds-score"];
-const DEFAULT_REPORT_ID = "REP-2001";
 const DEFAULT_MAGNIFIER_CONFIG = { size: 200, zoomFactor: 2 };
 const MAX_MAGNIFIER_CONFIG = { size: 500, zoomFactor: 8 };
 const MIN_MAGNIFIER_CONFIG = { size: 200, zoomFactor: 2 };
@@ -53,8 +52,28 @@ export function AiModuleSelectionPage() {
   const previewImageRef = useRef(null);
   const examination = useMemo(() => getExaminationByIds(patientId, examinationId), [patientId, examinationId]);
   const committedAiModuleStateCacheKey = getCommittedAiModuleStateCacheKey(patientId, examinationId);
-  const selectedFrameMap = location.state?.processedFrames || location.state?.selectedFrames || {};
-  const selectedRegions = useMemo(() => regions.filter((region) => selectedFrameMap[region]), [selectedFrameMap]);
+  const selectedFrameMap = location.state?.selectedFrames || location.state?.processedFrames || {};
+
+  // Build effective preview map from existing frames or examination videos
+  const effectiveFrameMap = useMemo(() => {
+    const map = {};
+    regions.forEach((region) => {
+      if (selectedFrameMap[region]) {
+        map[region] = selectedFrameMap[region];
+      } else {
+        const video = examination?.videos?.find((v) => v.region === region);
+        if (video) {
+          map[region] = {
+            region,
+            thumbnail: video.thumbnail,
+            frameIndex: 0
+          };
+        }
+      }
+    });
+    return map;
+  }, [examination, selectedFrameMap]);
+
   const [showOptionsMenu, setShowOptionsMenu] = useState(true);
   const [showSelectedMenu, setShowSelectedMenu] = useState(true);
   const [disabledActionMessage, setDisabledActionMessage] = useState("");
@@ -71,6 +90,7 @@ export function AiModuleSelectionPage() {
   });
   const [isMagnifierActive, setIsMagnifierActive] = useState(false);
   const [viewRotation, setViewRotation] = useState(0);
+
   const [selectedModuleIds, setSelectedModuleIds] = useState(() => {
     if (Array.isArray(location.state?.selectedModuleIds) && location.state.selectedModuleIds.length > 0) {
       return location.state.selectedModuleIds;
@@ -80,8 +100,21 @@ export function AiModuleSelectionPage() {
       return [location.state.selectedModuleId];
     }
 
+    try {
+      const savedState = window.sessionStorage.getItem(committedAiModuleStateCacheKey);
+      if (savedState) {
+        const parsedState = JSON.parse(savedState);
+        if (Array.isArray(parsedState?.selectedModuleIds) && parsedState.selectedModuleIds.length > 0) {
+          return parsedState.selectedModuleIds;
+        }
+      }
+    } catch {
+      return DEFAULT_MODULE_IDS;
+    }
+
     return DEFAULT_MODULE_IDS;
   });
+
   const [committedModuleSignature, setCommittedModuleSignature] = useState(() => {
     if (Array.isArray(location.state?.selectedModuleIds) && location.state.selectedModuleIds.length > 0) {
       return JSON.stringify(location.state.selectedModuleIds);
@@ -93,13 +126,10 @@ export function AiModuleSelectionPage() {
 
     try {
       const savedCommittedState = window.sessionStorage.getItem(committedAiModuleStateCacheKey);
-
       if (!savedCommittedState) {
         return null;
       }
-
       const parsedCommittedState = JSON.parse(savedCommittedState);
-
       if (Array.isArray(parsedCommittedState?.selectedModuleIds) && parsedCommittedState.selectedModuleIds.length > 0) {
         return JSON.stringify(parsedCommittedState.selectedModuleIds);
       }
@@ -109,7 +139,11 @@ export function AiModuleSelectionPage() {
 
     return null;
   });
-  const [activeRegion, setActiveRegion] = useState(location.state?.activePreprocessingRegion || selectedRegions[0] || "r1");
+
+  const [activeRegion, setActiveRegion] = useState(
+    location.state?.activePreprocessingRegion || examination?.videos?.[0]?.region || "r1"
+  );
+
   const {
     isHoldMode,
     panOffset,
@@ -123,6 +157,7 @@ export function AiModuleSelectionPage() {
     viewerStageRef,
     resetDependencies: [activeRegion]
   });
+
   const {
     isZoomMode,
     zoomScale,
@@ -165,21 +200,7 @@ export function AiModuleSelectionPage() {
     );
   }
 
-  if (selectedRegions.length === 0) {
-    return (
-      <div className="page-stack">
-        <section className="panel">
-          <h2>No processed frames found</h2>
-          <p>Complete preprocessing before opening AI module selection.</p>
-          <Link className="secondary-button" to={`/preprocessing/${patientId}/${examinationId}`}>
-            Back to preprocessing
-          </Link>
-        </section>
-      </div>
-    );
-  }
-
-  const activeSelectedFrame = activeRegion ? selectedFrameMap[activeRegion] || null : null;
+  const activeSelectedFrame = activeRegion ? effectiveFrameMap[activeRegion] || null : null;
   const selectedModuleLabel =
     selectedModuleIds.length > 0
       ? selectedModuleIds.map((moduleId) => (moduleId === "b-line" ? "B-LINE" : "RDS-SCORE")).join(", ")
@@ -205,13 +226,11 @@ export function AiModuleSelectionPage() {
     if (!isHoldMode && isZoomMode) {
       toggleZoomMode();
     }
-
     if (!isHoldMode && isMagnifierMode) {
       setIsMagnifierMode(false);
       setIsMagnifierActive(false);
       setShowMagnifierPopover(false);
     }
-
     toggleHoldMode();
   }
 
@@ -219,13 +238,11 @@ export function AiModuleSelectionPage() {
     if (!isZoomMode && isHoldMode) {
       toggleHoldMode();
     }
-
     if (!isZoomMode && isMagnifierMode) {
       setIsMagnifierMode(false);
       setIsMagnifierActive(false);
       setShowMagnifierPopover(false);
     }
-
     toggleZoomMode();
   }
 
@@ -233,11 +250,9 @@ export function AiModuleSelectionPage() {
     if (!isMagnifierMode && isHoldMode) {
       toggleHoldMode();
     }
-
     if (!isMagnifierMode && isZoomMode) {
       toggleZoomMode();
     }
-
     setIsMagnifierMode((current) => !current);
     setIsMagnifierActive(false);
     setShowMagnifierPopover(false);
@@ -274,42 +289,40 @@ export function AiModuleSelectionPage() {
 
   function handleContinue() {
     const actionLog = logSimpleAction(
-      `AI Analysis Started: ${selectedModuleIds.join(", ")}`,
+      `AI Module Selected: ${selectedModuleIds.join(", ")}`,
       ActionTypes.AI_ANALYSIS,
-      `Starting AI analysis with modules: ${selectedModuleIds.join(", ")} for patient ${patientId}, examination ${examinationId}`,
+      `Selected AI modules: ${selectedModuleIds.join(", ")} for patient ${patientId}, examination ${examinationId}`,
       { patientId, examinationId, selectedModuleIds, moduleCount: selectedModuleIds.length }
     );
 
     try {
       const nextModuleSignature = JSON.stringify(selectedModuleIds);
 
-      setActiveWorkflowContext({ patientId, examinationId, reportId: DEFAULT_REPORT_ID });
+      setActiveWorkflowContext({ patientId, examinationId, selectedModuleIds });
+
+      try {
+        window.sessionStorage.setItem(
+          committedAiModuleStateCacheKey,
+          JSON.stringify({
+            selectedModuleIds
+          })
+        );
+      } catch {
+        // Ignore session storage failures and keep the page functional.
+      }
 
       if (committedModuleSignature !== nextModuleSignature) {
-        resetWorkflowAfterStep(patientId, examinationId, 4);
+        resetWorkflowAfterStep(patientId, examinationId, 2);
         setCommittedModuleSignature(nextModuleSignature);
-
-        try {
-          window.sessionStorage.setItem(
-            committedAiModuleStateCacheKey,
-            JSON.stringify({
-              selectedModuleIds
-            })
-          );
-        } catch {
-          // Ignore session storage failures and keep the page functional.
-        }
       }
 
       completeAction(actionLog.id, "SUCCEEDED");
       
-      navigate(`/results/${DEFAULT_REPORT_ID}`, {
+      navigate(`/selection/${patientId}/${examinationId}`, {
         state: {
           ...location.state,
           patientId,
           examinationId,
-          reportId: DEFAULT_REPORT_ID,
-          selectedModuleId: selectedModuleIds[0] || null,
           selectedModuleIds
         }
       });
@@ -390,7 +403,6 @@ export function AiModuleSelectionPage() {
     if (isMagnifierActive) {
       setIsMagnifierActive(false);
     }
-
     stopHold(event);
     stopZoom(event);
   }
@@ -470,10 +482,11 @@ export function AiModuleSelectionPage() {
             viewerMode="frame"
             viewRotation={viewRotation}
             viewerStageRef={viewerStageRef}
-            framePlaceholderMessage="Preparing selected frame..."
+            framePlaceholderMessage="Preparing examination preview..."
             viewerOverlayMessage=""
             zoomOrigin={zoomOrigin}
             zoomScale={zoomScale}
+            rdsScore={null}
           />
         </section>
 
@@ -483,7 +496,7 @@ export function AiModuleSelectionPage() {
           onSelectFrame={setActiveRegion}
           regions={regions}
           selectedFrameRegion={activeRegion}
-          selectedFrames={selectedFrameMap}
+          selectedFrames={effectiveFrameMap}
           showSelectedMenu={showSelectedMenu}
           viewerMode="frame"
         />

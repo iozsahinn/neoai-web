@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { RegionVideosSidebar } from "../components/RegionVideosSidebar";
 import { SelectedFramesSidebar } from "../components/SelectedFramesSidebar";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ViewerHeader } from "../components/ViewerHeader";
 import { ViewerStage } from "../components/ViewerStage";
 import { useFramePlayback } from "../hooks/useFramePlayback";
@@ -12,12 +12,30 @@ import { useVideoFrameExtraction } from "../hooks/useVideoFrameExtraction";
 import { useViewerZoom } from "../hooks/useViewerZoom";
 import { getExaminationByIds } from "../services/mockApi";
 import { logSimpleAction, ActionTypes, completeAction } from "../services/actionLogger";
-import { resetWorkflowAfterStep, setActiveWorkflowContext } from "../utils/workflowState";
+import { resetWorkflowAfterStep, setActiveWorkflowContext, getActiveWorkflowContext } from "../utils/workflowState";
 
 const regions = ["r1", "r2", "r3", "r4", "r5", "r6"];
 const DEFAULT_MAGNIFIER_CONFIG = { size: 200, zoomFactor: 2 };
 const MAX_MAGNIFIER_CONFIG = { size: 500, zoomFactor: 8 };
 const MIN_MAGNIFIER_CONFIG = { size: 200, zoomFactor: 2 };
+
+// --- DYNAMIC RECTANGLE GENERATOR ---
+function generateRectanglesForFrame(frameNo, region) {
+  const rects = [];
+  const numRects = (frameNo % 3) + 1; // 1, 2, or 3 rectangles per frame
+
+  for (let i = 0; i < numRects; i++) {
+    const x = 50 + (frameNo % 150) + (i * 120);
+    const y = 50 + (i * 100);
+    rects.push({
+      id: `dyn-rect-${frameNo}-${i}`,
+      topLeft: { x: x, y: y },
+      bottomRight: { x: x + 100, y: y + 80 }
+    });
+  }
+  return rects;
+}
+// --- END ---
 
 function getExaminationCacheKey(patientId, examinationId) {
   return `neoai-cache:${patientId}:${examinationId}`;
@@ -52,11 +70,36 @@ function getMagnifierState(stageRect, imageRect, clientX, clientY, magnifierConf
 
 export function DataSelectionPage() {
   const { patientId, examinationId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const examination = useMemo(() => getExaminationByIds(patientId, examinationId), [patientId, examinationId]);
   const initialRegion = examination?.videos[0]?.region || "r1";
   const examinationCacheKey = getExaminationCacheKey(patientId, examinationId);
   const committedSelectionStateCacheKey = getCommittedSelectionStateCacheKey(patientId, examinationId);
+
+  const selectedModuleIds = useMemo(() => {
+    if (Array.isArray(location.state?.selectedModuleIds) && location.state.selectedModuleIds.length > 0) {
+      return location.state.selectedModuleIds;
+    }
+    const context = getActiveWorkflowContext();
+    if (Array.isArray(context?.selectedModuleIds) && context.selectedModuleIds.length > 0) {
+      return context.selectedModuleIds;
+    }
+    try {
+      const savedState = window.sessionStorage.getItem(`neoai-ai-module-committed:${patientId}:${examinationId}`);
+      if (savedState) {
+        const parsed = JSON.parse(savedState);
+        if (Array.isArray(parsed?.selectedModuleIds) && parsed.selectedModuleIds.length > 0) {
+          return parsed.selectedModuleIds;
+        }
+      }
+    } catch {
+      return ["rds-score", "b-line"];
+    }
+    return ["rds-score", "b-line"];
+  }, [location.state, patientId, examinationId]);
+  const isBLineSelected = selectedModuleIds.includes("b-line");
+  const isRdsSelected = selectedModuleIds.includes("rds-score");
   const fpsPopoverRef = useRef(null);
   const magnifierPopoverRef = useRef(null);
   const pendingFrameJumpRef = useRef(null);
@@ -139,6 +182,14 @@ export function DataSelectionPage() {
     activeVideoFramesLength: activeVideoFrames.length,
     totalFrames
   });
+
+  const dynamicRectangles = useMemo(() => {
+    if (!isBLineSelected) {
+      return [];
+    }
+    return generateRectanglesForFrame(currentFrame, activeRegion);
+  }, [currentFrame, activeRegion, isBLineSelected]);
+
   const {
     isHoldMode,
     panOffset,
@@ -267,13 +318,18 @@ export function DataSelectionPage() {
       return;
     }
 
+    const currentRectangles = isBLineSelected ? generateRectanglesForFrame(currentFrame, activeRegion) : [];
+    const rdsScore = isRdsSelected ? (activeVideo?.rdsScore ?? 2) : null;
+
     setSelectedFrames((current) => ({
       ...current,
       [activeRegion]: {
         region: activeRegion,
-        videoName: activeVideo.name,
+        videoName: activeVideo?.name || "",
         thumbnail: activeVideoFrames[currentFrame],
-        frameIndex: currentFrame
+        frameIndex: currentFrame,
+        rectangles: currentRectangles,
+        rdsScore: rdsScore
       }
     }));
     setViewerMode("video");
@@ -371,7 +427,7 @@ export function DataSelectionPage() {
       const nextSelectionSignature = JSON.stringify(selectedFrames);
 
       if (committedSelectionSignature !== nextSelectionSignature) {
-        resetWorkflowAfterStep(patientId, examinationId, 2);
+        resetWorkflowAfterStep(patientId, examinationId, 3);
         setCommittedSelectionSignature(nextSelectionSignature);
 
         try {
@@ -386,14 +442,16 @@ export function DataSelectionPage() {
         }
       }
 
-      setActiveWorkflowContext({ patientId, examinationId });
+      setActiveWorkflowContext({ patientId, examinationId, selectedModuleIds });
       completeAction(actionLog.id, "SUCCEEDED");
       
       navigate(`/preprocessing/${patientId}/${examinationId}`, {
         state: {
+          ...location.state,
           patientId,
           examinationId,
-          selectedFrames
+          selectedFrames,
+          selectedModuleIds
         }
       });
     } catch (error) {
@@ -571,6 +629,7 @@ export function DataSelectionPage() {
           regions={regions}
           selectedFrames={selectedFrames}
           showVideoMenu={showVideoMenu}
+          showRdsScore={isRdsSelected}
         />
 
         <section className="selection-main panel">
@@ -643,6 +702,8 @@ export function DataSelectionPage() {
             viewerStageRef={viewerStageRef}
             zoomOrigin={zoomOrigin}
             zoomScale={zoomScale}
+            customRectangles={dynamicRectangles}
+            rdsScore={isRdsSelected ? (activeVideo?.rdsScore ?? 2) : null}
           />
         </section>
 
@@ -662,4 +723,3 @@ export function DataSelectionPage() {
     </div>
   );
 }
-

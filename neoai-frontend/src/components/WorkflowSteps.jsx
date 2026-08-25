@@ -10,10 +10,9 @@ import {
 
 const stepOrder = [
   { key: "query", label: "Data Query" },
+  { key: "ai-module", label: "AI Module Selection" },
   { key: "selection", label: "Data Selection" },
   { key: "preprocessing", label: "Data Preprocessing" },
-  { key: "ai-module", label: "AI Module Selection" },
-  { key: "results", label: "AI Results" },
   { key: "reporting", label: "Reporting" }
 ];
 
@@ -34,7 +33,6 @@ function buildStepHref(stepKey, context, pathname = "") {
       case "ai-module":
         return patientId && examinationId ? `/ai-module-ecg-pulse-oximeter/${patientId}/${examinationId}` : "/query-ecg-pulse-oximeter";
       case "results":
-        return `/results-ecg-pulse-oximeter/${reportId}`;
       case "reporting":
         return `/report/${reportId}`;
       default:
@@ -52,7 +50,6 @@ function buildStepHref(stepKey, context, pathname = "") {
       case "ai-module":
         return patientId && examinationId ? `/ai-module-pulse-oximeter/${patientId}/${examinationId}` : "/query-pulse-oximeter";
       case "results":
-        return `/results-pulse-oximeter/${reportId}`;
       case "reporting":
         return `/report/${reportId}`;
       default:
@@ -63,14 +60,12 @@ function buildStepHref(stepKey, context, pathname = "") {
   switch (stepKey) {
     case "query":
       return "/query";
+    case "ai-module":
+      return patientId && examinationId ? `/ai-module/${patientId}/${examinationId}` : "/query";
     case "selection":
       return patientId && examinationId ? `/selection/${patientId}/${examinationId}` : "/query";
     case "preprocessing":
       return patientId && examinationId ? `/preprocessing/${patientId}/${examinationId}` : "/query";
-    case "ai-module":
-      return patientId && examinationId ? `/ai-module/${patientId}/${examinationId}` : "/query";
-    case "results":
-      return `/results/${reportId}`;
     case "reporting":
       return `/report/${reportId}`;
     default:

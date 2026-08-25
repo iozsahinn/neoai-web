@@ -498,7 +498,7 @@ export function PatientQueryWorkflowPage() {
                                   <Typography fontWeight={700}>Videos</Typography>
                                   <Button
                                     component={Link}
-                                    to={`/selection/${patient.id}/${examination.id}`}
+                                    to={`/ai-module/${patient.id}/${examination.id}`}
                                     onClick={() => handleContinue(patient.id, examination.id)}
                                     variant="contained"
                                   >
