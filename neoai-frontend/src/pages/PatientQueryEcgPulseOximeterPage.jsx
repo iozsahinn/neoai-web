@@ -364,7 +364,7 @@ export function PatientQueryEcgPulseOximeterPage() {
                                     <Box>
                                       <Typography variant="subtitle2" fontWeight={700}>Synchronous Signal Preview</Typography>
                                       <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                                        Lead II ECG and continuous SpO2 sampling rate: 250 Hz.
+                                        Lead II ECG and continuous SpO2 sampling rate: 500 Hz.
                                         Signal duration: 2 hours continuous recording.
                                       </Typography>
                                     </Box>

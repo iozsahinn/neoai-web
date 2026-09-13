@@ -318,7 +318,8 @@ export function AiModuleSelectionPage() {
 
       completeAction(actionLog.id, "SUCCEEDED");
       
-      navigate(`/selection/${patientId}/${examinationId}`, {
+      const reportId = location.state?.reportId || "REP-2001";
+      navigate(`/report/${reportId}`, {
         state: {
           ...location.state,
           patientId,

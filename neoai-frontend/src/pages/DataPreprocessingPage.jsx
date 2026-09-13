@@ -626,7 +626,7 @@ export function DataPreprocessingPage() {
 
       completeAction(actionLog.id, "SUCCEEDED");
       
-      navigate(`/report/${reportId}`, {
+      navigate(`/ai-module/${patientId}/${examinationId}`, {
         state: {
           ...location.state,
           activePreprocessingRegion: activeRegion,

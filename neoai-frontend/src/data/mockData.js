@@ -112,7 +112,7 @@ function createExamination(index) {
 
 function generateSignalData(length = 200) {
   const data = [];
-  const beatPeriod = 22; // ~110 bpm cardiac cycle at 250 Hz sampling
+  const beatPeriod = 22; // ~110 bpm cardiac cycle at 500 Hz sampling
 
   for (let i = 0; i < length; i++) {
     const phase = (i % beatPeriod) / beatPeriod; // Phase 0.0 to 1.0 per heart beat

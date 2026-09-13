@@ -10,9 +10,9 @@ import {
 
 const stepOrder = [
   { key: "query", label: "Data Query" },
-  { key: "ai-module", label: "AI Module Selection" },
   { key: "selection", label: "Data Selection" },
   { key: "preprocessing", label: "Data Preprocessing" },
+  { key: "ai-module", label: "AI Module Selection" },
   { key: "reporting", label: "Reporting" }
 ];
 

@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import DescriptionRoundedIcon from "@mui/icons-material/DescriptionRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 import MonitorHeartRoundedIcon from "@mui/icons-material/MonitorHeartRounded";
+import PictureAsPdfRoundedIcon from "@mui/icons-material/PictureAsPdfRounded";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import {
   Box,
@@ -12,19 +13,25 @@ import {
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Divider,
   Grid,
   Paper,
   Stack,
   Typography
 } from "@mui/material";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import { getReportById } from "../services/mockApi";
 import { ecgPulseOximeterReport } from "../data/mockData";
 import { WorkflowSteps } from "../components/WorkflowSteps";
+import { logSimpleAction, ActionTypes, completeAction, failAction } from "../services/actionLogger";
 
 export function AiResultsEcgPulseOximeterPage() {
   const { reportId } = useParams();
   const navigate = useNavigate();
+  const eventMapRef = useRef(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const report = useMemo(() => {
     return getReportById(reportId) || ecgPulseOximeterReport;
@@ -46,6 +53,75 @@ export function AiResultsEcgPulseOximeterPage() {
     reportId: report?.id || "REP-EPO-3001"
   };
 
+  const handleExportPdf = async () => {
+    if (isExporting || !eventMapRef.current) return;
+    setIsExporting(true);
+
+    const actionLog = logSimpleAction(
+      "Export Event Map PDF",
+      ActionTypes.REPORT_GENERATION,
+      `Exporting Synchronized ECG & SpO2 Event Map PDF for patient ${context.patientId}`,
+      { patientId: context.patientId, examinationId: context.examinationId, eventTime: activeEvent.time }
+    );
+
+    try {
+      const canvas = await html2canvas(eventMapRef.current, {
+        backgroundColor: "#0f172a",
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      // Header overlay on PDF
+      pdf.setFillColor(15, 23, 42);
+      pdf.rect(0, 0, pdfWidth, pdfHeight, "F");
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(14);
+      pdf.setTextColor(56, 189, 248);
+      pdf.text("NeoAI - Synchronized ECG & SpO2 Event Map Report", 12, 14);
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(9);
+      pdf.setTextColor(148, 163, 184);
+      pdf.text(
+        `Patient ID: ${context.patientId}  |  Exam ID: ${context.examinationId}  |  Event: ${activeEvent.time} (${activeEvent.type})  |  Date: ${new Date().toLocaleString()}`,
+        12,
+        20
+      );
+
+      const imgProps = pdf.getImageProperties(imgData);
+      const contentWidth = pdfWidth - 24;
+      const contentHeight = (imgProps.height * contentWidth) / imgProps.width;
+      const startY = 24;
+
+      if (startY + contentHeight > pdfHeight - 12) {
+        const maxHeight = pdfHeight - startY - 12;
+        const fitWidth = (imgProps.width * maxHeight) / imgProps.height;
+        pdf.addImage(imgData, "PNG", (pdfWidth - fitWidth) / 2, startY, fitWidth, maxHeight);
+      } else {
+        pdf.addImage(imgData, "PNG", 12, startY, contentWidth, contentHeight);
+      }
+
+      const safePatient = (context.patientId || "PT-1001").replace(/[^a-zA-Z0-9_-]/g, "");
+      const safeTime = (activeEvent.time || "00-00-00").replace(/:/g, "-");
+      pdf.save(`ECG_SpO2_Event_Map_${safePatient}_${safeTime}.pdf`);
+
+      if (actionLog?.id) completeAction(actionLog.id);
+    } catch (error) {
+      console.error("Error generating Event Map PDF:", error);
+      if (actionLog?.id) failAction(actionLog.id, error?.message || "PDF generation error");
+      alert("PDF indirilirken bir hata oluştu. Lütfen tekrar deneyiniz.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <Stack spacing={3} className="page-container">
       <WorkflowSteps currentStep="results" context={context} />
@@ -60,7 +136,14 @@ export function AiResultsEcgPulseOximeterPage() {
           Back to AI Module
         </Button>
         <Stack direction="row" spacing={1.5}>
-          <Button variant="outlined" startIcon={<DownloadRoundedIcon />}>Export Data</Button>
+          <Button
+            variant="outlined"
+            startIcon={isExporting ? <CircularProgress size={18} color="inherit" /> : <PictureAsPdfRoundedIcon />}
+            onClick={handleExportPdf}
+            disabled={isExporting}
+          >
+            {isExporting ? "Preparing PDF..." : "Export PDF"}
+          </Button>
           <Button
             variant="contained"
             color="primary"
@@ -98,13 +181,26 @@ export function AiResultsEcgPulseOximeterPage() {
       <Grid container spacing={3}>
         {/* Left Column: Synchronized Visual Event Plot */}
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
+          <Paper ref={eventMapRef} variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
             <Stack spacing={2.5}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} spacing={1.5}>
                 <Typography variant="h6" fontWeight={700} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <MonitorHeartRoundedIcon color="primary" /> Synchronized ECG & SpO2 Event Map
                 </Typography>
-                <Chip label={`Selected Event at ${activeEvent.time}`} color="warning" size="small" />
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Chip label={`Selected Event at ${activeEvent.time}`} color="warning" size="small" />
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="small"
+                    startIcon={isExporting ? <CircularProgress size={14} color="inherit" /> : <PictureAsPdfRoundedIcon />}
+                    onClick={handleExportPdf}
+                    disabled={isExporting}
+                    sx={{ fontWeight: 600, height: 28, textTransform: "none", fontSize: "0.8125rem", px: 1.5 }}
+                  >
+                    {isExporting ? "Preparing PDF..." : "Export PDF"}
+                  </Button>
+                </Stack>
               </Stack>
 
               {/* Event Selector Pills */}
@@ -208,3 +304,4 @@ export function AiResultsEcgPulseOximeterPage() {
     </Stack>
   );
 }
+
