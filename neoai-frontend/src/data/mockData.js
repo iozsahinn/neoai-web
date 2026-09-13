@@ -50,7 +50,8 @@ function createVideoSet(seed) {
       duration: "00:18",
       thumbnail: sampleThumbnail,
       videoUrl: r1,
-      comment: "Left lobe sweep"
+      comment: "Left lobe sweep",
+      rdsScore: 3
     },
     {
       name: `VID-${seed}02`,
@@ -58,7 +59,8 @@ function createVideoSet(seed) {
       duration: "00:22",
       thumbnail: sampleThumbnail,
       videoUrl: r2,
-      comment: "Upper pole focus"
+      comment: "Upper pole focus",
+      rdsScore: 2
     },
     {
       name: `VID-${seed}03`,
@@ -66,7 +68,8 @@ function createVideoSet(seed) {
       duration: "00:20",
       thumbnail: sampleThumbnail,
       videoUrl: r3,
-      comment: "Suspicious nodule view"
+      comment: "Suspicious nodule view",
+      rdsScore: 3
     },
     {
       name: `VID-${seed}04`,
@@ -74,7 +77,8 @@ function createVideoSet(seed) {
       duration: "00:25",
       thumbnail: sampleThumbnail,
       videoUrl: r4,
-      comment: "Transverse section"
+      comment: "Transverse section",
+      rdsScore: 2
     },
     {
       name: `VID-${seed}05`,
@@ -82,7 +86,8 @@ function createVideoSet(seed) {
       duration: "00:17",
       thumbnail: sampleThumbnail,
       videoUrl: r5,
-      comment: "Lower margin pass"
+      comment: "Lower margin pass",
+      rdsScore: 2
     },
     {
       name: `VID-${seed}06`,
@@ -90,7 +95,8 @@ function createVideoSet(seed) {
       duration: "00:21",
       thumbnail: sampleThumbnail,
       videoUrl: r6,
-      comment: "Right lobe close-up"
+      comment: "Right lobe close-up",
+      rdsScore: 1
     }
   ];
 }
@@ -106,7 +112,7 @@ function createExamination(index) {
 
 function generateSignalData(length = 200) {
   const data = [];
-  const beatPeriod = 22; // ~110 bpm cardiac cycle at 250 Hz sampling
+  const beatPeriod = 22; // ~110 bpm cardiac cycle at 500 Hz sampling
 
   for (let i = 0; i < length; i++) {
     const phase = (i % beatPeriod) / beatPeriod; // Phase 0.0 to 1.0 per heart beat

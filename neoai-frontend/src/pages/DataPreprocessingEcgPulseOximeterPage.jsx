@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
@@ -21,6 +21,7 @@ import PsychologyRoundedIcon from "@mui/icons-material/PsychologyRounded";
 import PanToolRoundedIcon from "@mui/icons-material/PanToolRounded";
 import FootprintIcon from "@mui/icons-material/DirectionsWalkRounded";
 import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
+import PictureAsPdfRoundedIcon from "@mui/icons-material/PictureAsPdfRounded";
 import {
   Box,
   Button,
@@ -28,6 +29,7 @@ import {
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Divider,
   FormControl,
   FormControlLabel,
@@ -42,6 +44,8 @@ import {
   Tooltip,
   Typography
 } from "@mui/material";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import { findPatientById } from "../services/mockApi";
 import { WorkflowSteps } from "../components/WorkflowSteps";
 import {
@@ -54,10 +58,13 @@ import {
   applyZeroPhaseFiltFilt,
   applyWaveletDenoising,
   applyAwadFilter,
+  calculatePerfusionIndex,
+  calculatePlethVariabilityIndex,
   computeClinicalSqiMetrics
 } from "../utils/spo2FilterUtils";
 import { useDualSignalWorker } from "../hooks/useDualSignalWorker";
 import { HumanBodyAcquisitionMap } from "../components/HumanBodyAcquisitionMap";
+import { logSimpleAction, ActionTypes, completeAction, failAction } from "../services/actionLogger";
 
 export function DataPreprocessingEcgPulseOximeterPage() {
   const { patientId, examinationId } = useParams();
@@ -100,6 +107,80 @@ export function DataPreprocessingEcgPulseOximeterPage() {
 
   const [timeSyncOffset, setTimeSyncOffset] = useState(0);
 
+  const rawPlotsRef = useRef(null);
+  const [isExportingRawPdf, setIsExportingRawPdf] = useState(false);
+
+  const isRawSelected = useMemo(() => {
+    return activePreset === "raw" || batchAlgorithm === "raw" || ecgMode === "raw";
+  }, [activePreset, batchAlgorithm, ecgMode]);
+
+  const handleExportRawPdf = async () => {
+    if (isExportingRawPdf || !rawPlotsRef.current) return;
+    setIsExportingRawPdf(true);
+
+    const actionLog = logSimpleAction(
+      "Export Raw Signals PDF",
+      ActionTypes.REPORT_GENERATION,
+      `Exporting raw unprocessed ECG & SpO2 signals PDF for patient ${patient?.name || "PT-1001"}`,
+      { patientId: patient?.id || "PT-1001", examId: exam?.id || "EPO_Exam_1001", sampleRate: "500 Hz" }
+    );
+
+    try {
+      const canvas = await html2canvas(rawPlotsRef.current, {
+        backgroundColor: "#0f172a",
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      pdf.setFillColor(15, 23, 42);
+      pdf.rect(0, 0, pdfWidth, pdfHeight, "F");
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(14);
+      pdf.setTextColor(245, 158, 11);
+      pdf.text("NeoAI - Raw Unprocessed Hardware Signal Report", 12, 14);
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(9);
+      pdf.setTextColor(148, 163, 184);
+      pdf.text(
+        `Patient: ${patient?.name || "PT-1001"}  |  Exam ID: ${exam?.id || "EPO_Exam_1001"}  |  Sampling Rate: 500 Hz  |  Mode: Raw Baseline (Unfiltered)  |  Date: ${new Date().toLocaleString()}`,
+        12,
+        20
+      );
+
+      const imgProps = pdf.getImageProperties(imgData);
+      const contentWidth = pdfWidth - 24;
+      const contentHeight = (imgProps.height * contentWidth) / imgProps.width;
+      const startY = 24;
+
+      if (startY + contentHeight > pdfHeight - 12) {
+        const maxHeight = pdfHeight - startY - 12;
+        const fitWidth = (imgProps.width * maxHeight) / imgProps.height;
+        pdf.addImage(imgData, "PNG", (pdfWidth - fitWidth) / 2, startY, fitWidth, maxHeight);
+      } else {
+        pdf.addImage(imgData, "PNG", 12, startY, contentWidth, contentHeight);
+      }
+
+      const safePatient = (patient?.id || "PT-1001").replace(/[^a-zA-Z0-9_-]/g, "");
+      pdf.save(`Raw_Unprocessed_Signals_${safePatient}_500Hz.pdf`);
+
+      if (actionLog?.id) completeAction(actionLog.id);
+    } catch (error) {
+      console.error("Error exporting Raw Signals PDF:", error);
+      if (actionLog?.id) failAction(actionLog.id, error?.message || "PDF generation error");
+      alert("Raw sinyal PDF'i indirilirken bir hata oluştu. Lütfen tekrar deneyiniz.");
+    } finally {
+      setIsExportingRawPdf(false);
+    }
+  };
+
   const rawEcg = exam?.ecgSignalData || [];
 
   // Hand (Upper Limb) & Foot (Lower Limb) Raw PPG Signals
@@ -111,7 +192,7 @@ export function DataPreprocessingEcgPulseOximeterPage() {
     if (exam?.footSpo2SignalData && exam.footSpo2SignalData.length > 0) {
       return exam.footSpo2SignalData;
     }
-    // Physiologically derive Foot POX signal with PTT delay shift (~10 samples @ 250Hz = ~40ms) and lower amplitude (85%)
+    // Physiologically derive Foot POX signal with PTT delay shift (~20 samples @ 500Hz = ~40ms) and lower amplitude (85%)
     if (!rawHandSpo2 || rawHandSpo2.length === 0) return [];
     const len = rawHandSpo2.length;
     const shift = 10; // ~40ms delay for arterial transit time to lower limb
@@ -193,7 +274,7 @@ export function DataPreprocessingEcgPulseOximeterPage() {
 
   // Fallback / Primary Clinical Filtered ECG Signal
   const processedEcg = useMemo(() => {
-    return applyEcgFilter(rawEcg, ecgMode, notchFilter, 250);
+    return applyEcgFilter(rawEcg, ecgMode, notchFilter, 500);
   }, [rawEcg, ecgMode, notchFilter]);
 
   // Filtering Function Helper for PPG (Hand & Foot)
@@ -202,9 +283,9 @@ export function DataPreprocessingEcgPulseOximeterPage() {
 
     if (spo2TabMode === "live") {
       let signal = [...rawSignal];
-      if (timeLowPassEnabled) signal = applyTimeDomainLowPass(signal, timeLowPassCutoffHz, 250);
+      if (timeLowPassEnabled) signal = applyTimeDomainLowPass(signal, timeLowPassCutoffHz, 500);
       if (timeHighPassEnabled) signal = applyTimeDomainHighPass(signal, timeHighPassCutoff);
-      if (notchFilterSpo2Enabled) signal = applyNotchFilter(signal, notchFreqSpo2, 250);
+      if (notchFilterSpo2Enabled) signal = applyNotchFilter(signal, notchFreqSpo2, 500);
       if (smoothingEnabled) signal = applyMovingAverageSmoothing(signal, smoothingPoints);
       return signal;
     } else {
@@ -215,7 +296,7 @@ export function DataPreprocessingEcgPulseOximeterPage() {
         case "savgol":
           return applySavitzkyGolayFilter(signal, savgolWindow);
         case "filtfilt":
-          return applyZeroPhaseFiltFilt(signal, filtfiltCutoffHz, 250);
+          return applyZeroPhaseFiltFilt(signal, filtfiltCutoffHz, 500);
         case "wavelet":
           return applyWaveletDenoising(signal, waveletThreshold);
         case "raw":
@@ -246,7 +327,29 @@ export function DataPreprocessingEcgPulseOximeterPage() {
     return computeClinicalSqiMetrics(processedEcg, processedFootSpo2);
   }, [processedEcg, processedFootSpo2]);
 
-  // Inter-Limb Pulse Transit Time (PTT Delay) Calculation (40ms ~ 10 samples @ 250Hz)
+  // AWAD Denoised Signals for Amplitude-Preserved Hemodynamic PI & PVI Calculations
+  const handAwadSignal = useMemo(() => {
+    return applyAwadFilter(rawHandSpo2, awadGain);
+  }, [rawHandSpo2, awadGain]);
+
+  const footAwadSignal = useMemo(() => {
+    return applyAwadFilter(rawFootSpo2, awadGain);
+  }, [rawFootSpo2, awadGain]);
+
+  // Hemodynamic Parameters: PI (Perfusion Index) & PVI (Pleth Variability Index)
+  const handPiData = useMemo(() => {
+    return calculatePerfusionIndex(handAwadSignal, false);
+  }, [handAwadSignal]);
+
+  const footPiData = useMemo(() => {
+    return calculatePerfusionIndex(footAwadSignal, true);
+  }, [footAwadSignal]);
+
+  const handPviValue = useMemo(() => {
+    return calculatePlethVariabilityIndex(handPiData.piValues);
+  }, [handPiData.piValues]);
+
+  // Inter-Limb Pulse Transit Time (PTT Delay) Calculation (40ms ~ 20 samples @ 500Hz)
   const pulseTransitTimeMs = 40;
 
   // Active SpO2 Filters Label
@@ -382,6 +485,16 @@ export function DataPreprocessingEcgPulseOximeterPage() {
           <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
             <Button
               size="small"
+              variant={activePreset === "raw" ? "contained" : "outlined"}
+              color={activePreset === "raw" ? "warning" : "inherit"}
+              startIcon={<RestartAltRoundedIcon />}
+              onClick={() => applyDoctorPreset("raw")}
+              sx={{ fontWeight: 600, borderRadius: 2 }}
+            >
+              Raw Unprocessed
+            </Button>
+            <Button
+              size="small"
               variant={activePreset === "awad" ? "contained" : "outlined"}
               color="secondary"
               startIcon={<PsychologyRoundedIcon />}
@@ -420,16 +533,19 @@ export function DataPreprocessingEcgPulseOximeterPage() {
             >
               Motion Artifact Filter
             </Button>
-            <Button
-              size="small"
-              variant={activePreset === "raw" ? "contained" : "outlined"}
-              color="inherit"
-              startIcon={<RestartAltRoundedIcon />}
-              onClick={() => applyDoctorPreset("raw")}
-              sx={{ fontWeight: 600, borderRadius: 2 }}
-            >
-              Raw Unprocessed
-            </Button>
+            {isRawSelected && (
+              <Button
+                size="small"
+                variant="contained"
+                color="warning"
+                startIcon={isExportingRawPdf ? <CircularProgress size={14} color="inherit" /> : <PictureAsPdfRoundedIcon />}
+                onClick={handleExportRawPdf}
+                disabled={isExportingRawPdf}
+                sx={{ fontWeight: 700, borderRadius: 2, boxShadow: "0 0 12px rgba(245, 158, 11, 0.4)" }}
+              >
+                {isExportingRawPdf ? "Preparing Raw PDF..." : "Export Raw Data PDF"}
+              </Button>
+            )}
           </Stack>
         </Stack>
       </Paper>
@@ -489,46 +605,61 @@ export function DataPreprocessingEcgPulseOximeterPage() {
 
           <Divider orientation="vertical" flexItem sx={{ display: { xs: "none", md: "block" }, mr: "-1px" }} />
 
-          {/* Inter-Limb PTT Delay & Clinical Vitals Summary */}
+          {/* Inter-Limb PTT Delay & Clinical Hemodynamic Vitals Summary */}
           <Grid size={{ xs: 12, md: 4 }}>
             <Grid container spacing={1.5}>
-              <Grid size={{ xs: 6 }}>
-                <Paper variant="outlined" sx={{ p: 1.25, background: "rgba(15, 23, 42, 0.5)", borderColor: "rgba(74, 222, 128, 0.2)" }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: "flex", alignItems: "center", gap: 0.5, fontSize: 11 }}>
-                    <WaterDropRoundedIcon sx={{ fontSize: 13, color: "#4ade80" }} /> Hand SpO2
+              <Grid size={{ xs: 4 }}>
+                <Paper variant="outlined" sx={{ p: 1, background: "rgba(15, 23, 42, 0.5)", borderColor: "rgba(74, 222, 128, 0.2)" }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "flex", alignItems: "center", gap: 0.3, fontSize: 10 }}>
+                    <WaterDropRoundedIcon sx={{ fontSize: 12, color: "#4ade80" }} /> Hand SpO2
                   </Typography>
-                  <Typography variant="subtitle1" fontWeight={800} sx={{ color: "#4ade80" }}>
+                  <Typography variant="body2" fontWeight={800} sx={{ color: "#4ade80" }}>
                     {currentSpo2Saturation}%
                   </Typography>
                 </Paper>
               </Grid>
 
-              <Grid size={{ xs: 6 }}>
-                <Paper variant="outlined" sx={{ p: 1.25, background: "rgba(15, 23, 42, 0.5)", borderColor: "rgba(192, 132, 252, 0.2)" }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: "flex", alignItems: "center", gap: 0.5, fontSize: 11 }}>
-                    <WaterDropRoundedIcon sx={{ fontSize: 13, color: "#c084fc" }} /> Foot SpO2
+              <Grid size={{ xs: 4 }}>
+                <Paper variant="outlined" sx={{ p: 1, background: "rgba(15, 23, 42, 0.5)", borderColor: "rgba(56, 189, 248, 0.2)" }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "flex", alignItems: "center", gap: 0.3, fontSize: 10 }}>
+                    <WaterDropRoundedIcon sx={{ fontSize: 12, color: "#38bdf8" }} /> Hand PI
                   </Typography>
-                  <Typography variant="subtitle1" fontWeight={800} sx={{ color: "#c084fc" }}>
-                    {footSpo2Saturation}%
+                  <Typography variant="body2" fontWeight={800} sx={{ color: "#38bdf8" }}>
+                    {handPiData.meanPi}%
                   </Typography>
                 </Paper>
               </Grid>
 
-              <Grid size={{ xs: 12 }}>
-                <Paper variant="outlined" sx={{ p: 1.25, background: "rgba(15, 23, 42, 0.6)", borderColor: "rgba(56, 189, 248, 0.3)" }}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: "flex", alignItems: "center", gap: 0.5, fontSize: 11 }}>
-                        <AccessTimeRoundedIcon sx={{ fontSize: 13, color: "#38bdf8" }} /> Hand-Foot PTT Delay (Pulse Transit Time)
-                      </Typography>
-                      <Typography variant="body2" fontWeight={800} sx={{ color: "#38bdf8" }}>
-                        Δt = {pulseTransitTimeMs} ms <Typography component="span" variant="caption" color="text.secondary">(Normal Arterial Propagation)</Typography>
-                      </Typography>
-                    </Box>
-                    <Tooltip title="Inter-limb Pulse Transit Time (PTT) measures propagation delay between hand and foot arterial pulse onset for vascular stiffness assessment.">
-                      <InfoOutlinedIcon sx={{ fontSize: 16, color: "text.secondary", cursor: "pointer" }} />
-                    </Tooltip>
-                  </Stack>
+              <Grid size={{ xs: 4 }}>
+                <Paper variant="outlined" sx={{ p: 1, background: "rgba(15, 23, 42, 0.5)", borderColor: "rgba(251, 146, 60, 0.2)" }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "flex", alignItems: "center", gap: 0.3, fontSize: 10 }}>
+                    <WaterDropRoundedIcon sx={{ fontSize: 12, color: "#fb923c" }} /> PVI (Pleth)
+                  </Typography>
+                  <Typography variant="body2" fontWeight={800} sx={{ color: "#fb923c" }}>
+                    {handPviValue}%
+                  </Typography>
+                </Paper>
+              </Grid>
+
+              <Grid size={{ xs: 6 }}>
+                <Paper variant="outlined" sx={{ p: 1, background: "rgba(15, 23, 42, 0.5)", borderColor: "rgba(192, 132, 252, 0.2)" }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "flex", alignItems: "center", gap: 0.3, fontSize: 10 }}>
+                    <WaterDropRoundedIcon sx={{ fontSize: 12, color: "#c084fc" }} /> Foot SpO2 / PI
+                  </Typography>
+                  <Typography variant="body2" fontWeight={800} sx={{ color: "#c084fc" }}>
+                    {footSpo2Saturation}% (PI: {footPiData.meanPi}%)
+                  </Typography>
+                </Paper>
+              </Grid>
+
+              <Grid size={{ xs: 6 }}>
+                <Paper variant="outlined" sx={{ p: 1, background: "rgba(15, 23, 42, 0.6)", borderColor: "rgba(56, 189, 248, 0.3)" }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "flex", alignItems: "center", gap: 0.3, fontSize: 10 }}>
+                    <AccessTimeRoundedIcon sx={{ fontSize: 12, color: "#38bdf8" }} /> PTT Delay
+                  </Typography>
+                  <Typography variant="body2" fontWeight={800} sx={{ color: "#38bdf8" }}>
+                    Δt = {pulseTransitTimeMs} ms
+                  </Typography>
                 </Paper>
               </Grid>
             </Grid>
@@ -560,7 +691,7 @@ export function DataPreprocessingEcgPulseOximeterPage() {
       </Paper>
 
       {/* Main Multi-Channel Aligned Subplots with Representative Human Body Signal Acquisition Map */}
-      <Grid container spacing={3}>
+      <Grid ref={rawPlotsRef} container spacing={3}>
         <Grid size={{ xs: 12, lg: 8.5 }}>
           <Grid container spacing={2} alignItems="stretch">
             {/* Representative Human Body Signal Acquisition Map */}
@@ -586,7 +717,7 @@ export function DataPreprocessingEcgPulseOximeterPage() {
                     </Typography>
                     <Stack direction="row" spacing={1} alignItems="center">
                       <Chip label={activeEcgFilterLabel} size="small" color="primary" variant="outlined" sx={{ fontWeight: 600, height: 22, fontSize: 11 }} />
-                      <Chip label="250 Hz" size="small" color="primary" variant="outlined" sx={{ height: 22, fontSize: 11 }} />
+                      <Chip label="500 Hz" size="small" color="primary" variant="outlined" sx={{ height: 22, fontSize: 11 }} />
                     </Stack>
                   </Stack>
 
@@ -615,6 +746,20 @@ export function DataPreprocessingEcgPulseOximeterPage() {
                         label={`Hand SQI: ${handSqiMetrics.overallSqi}%`}
                         size="small"
                         color="success"
+                        sx={{ fontWeight: 700, height: 22, fontSize: 11 }}
+                      />
+                      <Chip
+                        label={`Hand PI: ${handPiData.meanPi}%`}
+                        size="small"
+                        color="info"
+                        variant="outlined"
+                        sx={{ fontWeight: 700, height: 22, fontSize: 11 }}
+                      />
+                      <Chip
+                        label={`PVI: ${handPviValue}%`}
+                        size="small"
+                        color="warning"
+                        variant="outlined"
                         sx={{ fontWeight: 700, height: 22, fontSize: 11 }}
                       />
                       <Chip
@@ -652,6 +797,13 @@ export function DataPreprocessingEcgPulseOximeterPage() {
                         label={`Foot SQI: ${footSqiMetrics.overallSqi}%`}
                         size="small"
                         color="secondary"
+                        sx={{ fontWeight: 700, height: 22, fontSize: 11 }}
+                      />
+                      <Chip
+                        label={`Foot PI: ${footPiData.meanPi}%`}
+                        size="small"
+                        color="info"
+                        variant="outlined"
                         sx={{ fontWeight: 700, height: 22, fontSize: 11 }}
                       />
                       <Chip
@@ -714,6 +866,32 @@ export function DataPreprocessingEcgPulseOximeterPage() {
                 <FormControl component="fieldset" sx={{ width: "100%" }}>
                   <RadioGroup value={ecgMode} onChange={(e) => { setEcgMode(e.target.value); setActivePreset("custom"); }}>
                     <Stack spacing={1}>
+                      {/* Raw Mode */}
+                      <Card
+                        variant="outlined"
+                        sx={{
+                          p: 1.25,
+                          background: ecgMode === "raw" ? "rgba(255, 255, 255, 0.1)" : "rgba(15, 23, 42, 0.4)",
+                          border: ecgMode === "raw" ? "1px solid rgba(255, 255, 255, 0.4)" : "1px solid rgba(255, 255, 255, 0.1)",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        <FormControlLabel
+                          value="raw"
+                          control={<Radio size="small" sx={{ color: "text.secondary" }} />}
+                          label={
+                            <Box>
+                              <Typography variant="subtitle2" fontWeight={700} color="text.primary">
+                                Raw Hardware Lead (Pass-Through)
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Unfiltered raw ECG Lead II baseline hardware signal.
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                      </Card>
+
                       {/* Monitor Mode */}
                       <Card
                         variant="outlined"
@@ -760,32 +938,6 @@ export function DataPreprocessingEcgPulseOximeterPage() {
                               </Typography>
                               <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
                                 Preserves full ST-segment elevation/depression & T-wave morphology.
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                      </Card>
-
-                      {/* Raw Mode */}
-                      <Card
-                        variant="outlined"
-                        sx={{
-                          p: 1.25,
-                          background: ecgMode === "raw" ? "rgba(255, 255, 255, 0.1)" : "rgba(15, 23, 42, 0.4)",
-                          border: ecgMode === "raw" ? "1px solid rgba(255, 255, 255, 0.4)" : "1px solid rgba(255, 255, 255, 0.1)",
-                          transition: "all 0.2s ease"
-                        }}
-                      >
-                        <FormControlLabel
-                          value="raw"
-                          control={<Radio size="small" sx={{ color: "text.secondary" }} />}
-                          label={
-                            <Box>
-                              <Typography variant="subtitle2" fontWeight={700} color="text.primary">
-                                Raw Hardware Lead (Pass-Through)
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                Unfiltered raw ECG Lead II baseline hardware signal.
                               </Typography>
                             </Box>
                           }
@@ -984,7 +1136,49 @@ export function DataPreprocessingEcgPulseOximeterPage() {
                       onChange={(e) => { setBatchAlgorithm(e.target.value); setActivePreset("custom"); }}
                     >
                       <Stack spacing={1.5}>
-                        {/* 0. AWAD (Adaptive Wavelet Artifact Denoising) Card */}
+                        {/* 0. Pass-Through Raw Signal Card */}
+                        <Card
+                          variant="outlined"
+                          sx={{
+                            p: 1.5,
+                            background: batchAlgorithm === "raw" ? "rgba(245, 158, 11, 0.15)" : "rgba(15, 23, 42, 0.4)",
+                            border: batchAlgorithm === "raw" ? "1px solid #f59e0b" : "1px solid rgba(255, 255, 255, 0.1)",
+                            transition: "all 0.2s ease"
+                          }}
+                        >
+                          <FormControlLabel
+                            value="raw"
+                            control={<Radio size="small" color="warning" />}
+                            label={
+                              <Box>
+                                <Typography variant="subtitle2" fontWeight={700} sx={{ color: "#f59e0b" }}>
+                                  Raw Signal (Pass-Through)
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Unfiltered raw pulse oximeter hardware baseline signal.
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                          {batchAlgorithm === "raw" && (
+                            <Box sx={{ pl: 4, pr: 1, mt: 1 }}>
+                              <Button
+                                variant="contained"
+                                color="warning"
+                                size="small"
+                                startIcon={isExportingRawPdf ? <CircularProgress size={14} color="inherit" /> : <PictureAsPdfRoundedIcon />}
+                                onClick={handleExportRawPdf}
+                                disabled={isExportingRawPdf}
+                                fullWidth
+                                sx={{ textTransform: "none", fontWeight: 700, borderRadius: 1.5 }}
+                              >
+                                {isExportingRawPdf ? "Preparing Raw PDF..." : "Export Raw Data PDF"}
+                              </Button>
+                            </Box>
+                          )}
+                        </Card>
+
+                        {/* 1. AWAD (Adaptive Wavelet Artifact Denoising) Card - ÖNERİLEN FİLTRE */}
                         <Card
                           variant="outlined"
                           sx={{
@@ -1007,7 +1201,7 @@ export function DataPreprocessingEcgPulseOximeterPage() {
                                   </Tooltip>
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                                  Adaptive variance-based wavelet thresholding for motion artifacts.
+                                  Adaptive variance-based wavelet thresholding for motion artifacts. Preserves raw amplitude relationships for PI & PVI calculations.
                                 </Typography>
                               </Box>
                             }
@@ -1031,7 +1225,7 @@ export function DataPreprocessingEcgPulseOximeterPage() {
                           )}
                         </Card>
 
-                        {/* 1. Savitzky-Golay Filter Card */}
+                        {/* 2. Savitzky-Golay Filter Card */}
                         <Card
                           variant="outlined"
                           sx={{
@@ -1081,7 +1275,7 @@ export function DataPreprocessingEcgPulseOximeterPage() {
                           )}
                         </Card>
 
-                        {/* 2. Zero-Phase Forward-Backward IIR (filtfilt) Card */}
+                        {/* 3. Zero-Phase Forward-Backward IIR (filtfilt) Card */}
                         <Card
                           variant="outlined"
                           sx={{
@@ -1127,7 +1321,7 @@ export function DataPreprocessingEcgPulseOximeterPage() {
                           )}
                         </Card>
 
-                        {/* 3. Daubechies-4 (DB4) Discrete Wavelet Denoising Card */}
+                        {/* 4. Daubechies-4 (DB4) Discrete Wavelet Denoising Card */}
                         <Card
                           variant="outlined"
                           sx={{
@@ -1171,32 +1365,6 @@ export function DataPreprocessingEcgPulseOximeterPage() {
                               />
                             </Box>
                           )}
-                        </Card>
-
-                        {/* 4. Pass-Through Raw Signal Card */}
-                        <Card
-                          variant="outlined"
-                          sx={{
-                            p: 1.5,
-                            background: batchAlgorithm === "raw" ? "rgba(255, 255, 255, 0.1)" : "rgba(15, 23, 42, 0.4)",
-                            border: batchAlgorithm === "raw" ? "1px solid rgba(255, 255, 255, 0.4)" : "1px solid rgba(255, 255, 255, 0.1)",
-                            transition: "all 0.2s ease"
-                          }}
-                        >
-                          <FormControlLabel
-                            value="raw"
-                            control={<Radio size="small" sx={{ color: "text.secondary" }} />}
-                            label={
-                              <Box>
-                                <Typography variant="subtitle2" fontWeight={700} color="text.primary">
-                                  Raw Signal (Pass-Through)
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  Unfiltered raw pulse oximeter hardware baseline signal.
-                                </Typography>
-                              </Box>
-                            }
-                          />
                         </Card>
                       </Stack>
                     </RadioGroup>

@@ -46,7 +46,7 @@ export function useDualSignalWorker(rawEcg, rawSpo2, filterConfig, timeOffsetMs)
         payload: {
           ecgData: rawEcg,
           ppgData: rawSpo2,
-          sampleRateHz: 250,
+          sampleRateHz: 500,
           timeOffsetMs,
           filterConfig
         }

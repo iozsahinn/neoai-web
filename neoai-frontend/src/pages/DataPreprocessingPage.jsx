@@ -13,7 +13,7 @@ import { getExaminationByIds } from "../services/mockApi";
 import { notifyUserError } from "../services/errorToastBus";
 import { logSimpleAction, ActionTypes, completeAction } from "../services/actionLogger";
 import { applyOperationsToFrame } from "../utils/imageProcessing";
-import { resetWorkflowAfterStep, setActiveWorkflowContext } from "../utils/workflowState";
+import { resetWorkflowAfterStep, setActiveWorkflowContext, getActiveWorkflowContext } from "../utils/workflowState";
 
 const regions = ["r1", "r2", "r3", "r4", "r5", "r6"];
 const DEFAULT_MAGNIFIER_CONFIG = { size: 200, zoomFactor: 2 };
@@ -144,6 +144,30 @@ export function DataPreprocessingPage() {
     initialRegion
   });
 
+  const selectedModuleIds = useMemo(() => {
+    if (Array.isArray(location.state?.selectedModuleIds) && location.state.selectedModuleIds.length > 0) {
+      return location.state.selectedModuleIds;
+    }
+    const context = getActiveWorkflowContext();
+    if (Array.isArray(context?.selectedModuleIds) && context.selectedModuleIds.length > 0) {
+      return context.selectedModuleIds;
+    }
+    try {
+      const savedState = window.sessionStorage.getItem(`neoai-ai-module-committed:${patientId}:${examinationId}`);
+      if (savedState) {
+        const parsed = JSON.parse(savedState);
+        if (Array.isArray(parsed?.selectedModuleIds) && parsed.selectedModuleIds.length > 0) {
+          return parsed.selectedModuleIds;
+        }
+      }
+    } catch {
+      return ["rds-score"];
+    }
+    return ["rds-score"];
+  }, [location.state, patientId, examinationId]);
+
+  const isRdsSelected = selectedModuleIds.includes("rds-score");
+
   useEffect(() => {
     function handleOpenCvReady() {
       setOpenCvStatus("ready");
@@ -229,20 +253,30 @@ export function DataPreprocessingPage() {
   });
 
   function getSelectedFrameSource(frame) {
-    if (!frame?.videoName || !Number.isInteger(frame.frameIndex)) {
-      return frame?.thumbnail || "";
+    if (!frame) return "";
+    if (frame.thumbnail) return frame.thumbnail;
+    if (
+      frame.videoName &&
+      Number.isInteger(frame.frameIndex) &&
+      videoFramesByName[frame.videoName]?.[frame.frameIndex]
+    ) {
+      return videoFramesByName[frame.videoName][frame.frameIndex];
     }
-
-    return videoFramesByName[frame.videoName]?.[frame.frameIndex] || frame.thumbnail || "";
+    return "";
   }
 
-  const extractedActiveFrameSrc =
-    activeSelectedFrame?.videoName &&
-    Number.isInteger(activeSelectedFrame.frameIndex) &&
-    videoFramesByName[activeSelectedFrame.videoName]?.[activeSelectedFrame.frameIndex]
-      ? videoFramesByName[activeSelectedFrame.videoName][activeSelectedFrame.frameIndex]
-      : "";
-  const previewSource = extractedActiveFrameSrc || "";
+  const previewSource = useMemo(() => {
+    if (!activeSelectedFrame) return "";
+    if (activeSelectedFrame.thumbnail) return activeSelectedFrame.thumbnail;
+    if (
+      activeSelectedFrame.videoName &&
+      Number.isInteger(activeSelectedFrame.frameIndex) &&
+      videoFramesByName[activeSelectedFrame.videoName]?.[activeSelectedFrame.frameIndex]
+    ) {
+      return videoFramesByName[activeSelectedFrame.videoName][activeSelectedFrame.frameIndex];
+    }
+    return "";
+  }, [activeSelectedFrame, videoFramesByName]);
 
   const {
     isHoldMode,
@@ -569,12 +603,13 @@ export function DataPreprocessingPage() {
       const nextProcessedFrames =
         Object.keys(processedFrames).length === selectedRegions.length ? processedFrames : await processAllSelectedFrames();
       const nextOperationsSignature = JSON.stringify(operations);
+      const reportId = location.state?.reportId || "REP-2001";
 
       setProcessedFrames(nextProcessedFrames);
-      setActiveWorkflowContext({ patientId, examinationId });
+      setActiveWorkflowContext({ patientId, examinationId, reportId, selectedModuleIds });
 
       if (committedOperationsSignature !== nextOperationsSignature) {
-        resetWorkflowAfterStep(patientId, examinationId, 3);
+        resetWorkflowAfterStep(patientId, examinationId, 4);
         setCommittedOperationsSignature(nextOperationsSignature);
 
         try {
@@ -593,12 +628,15 @@ export function DataPreprocessingPage() {
       
       navigate(`/ai-module/${patientId}/${examinationId}`, {
         state: {
+          ...location.state,
           activePreprocessingRegion: activeRegion,
           patientId,
           examinationId,
+          reportId,
           selectedFrames: selectedFrameMap,
           processedFrames: nextProcessedFrames,
-          preprocessingOperations: operations
+          preprocessingOperations: operations,
+          selectedModuleIds
         }
       });
     } catch (error) {
@@ -688,7 +726,7 @@ export function DataPreprocessingPage() {
   const previewFrame = activeSelectedFrame
     ? {
         ...activeSelectedFrame,
-        thumbnail: processedPreviewSrc
+        thumbnail: processedPreviewSrc || previewSource || activeSelectedFrame.thumbnail || ""
       }
     : null;
   const enabledOperationCount = operations.filter((operation) => operation.enabled).length;
@@ -765,6 +803,7 @@ export function DataPreprocessingPage() {
             viewerOverlayMessage={viewerOverlayMessage}
             zoomOrigin={zoomOrigin}
             zoomScale={zoomScale}
+            rdsScore={isRdsSelected ? activeSelectedFrame?.rdsScore : null}
           />
         </section>
 

@@ -26,10 +26,13 @@ export function setActiveWorkflowContext(context) {
     return;
   }
 
+  const existing = getActiveWorkflowContext();
+
   const nextContext = {
     patientId: context.patientId,
     examinationId: context.examinationId,
-    reportId: context.reportId || "REP-2001"
+    reportId: context.reportId || existing?.reportId || "REP-2001",
+    selectedModuleIds: context.selectedModuleIds || existing?.selectedModuleIds || ["rds-score"]
   };
 
   window.sessionStorage.setItem(ACTIVE_WORKFLOW_KEY, JSON.stringify(nextContext));

@@ -496,12 +496,12 @@ export function PatientQueryWorkflowPage() {
                               <Box sx={{ margin: 1 }}>
                                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
                                   <Typography fontWeight={700}>Videos</Typography>
-                                  <Button
-                                    component={Link}
-                                    to={`/selection/${patient.id}/${examination.id}`}
-                                    onClick={() => handleContinue(patient.id, examination.id)}
-                                    variant="contained"
-                                  >
+                                   <Button
+                                     component={Link}
+                                     to={`/selection/${patient.id}/${examination.id}`}
+                                     onClick={() => handleContinue(patient.id, examination.id)}
+                                     variant="contained"
+                                   >
                                     Continue
                                   </Button>
                                 </Box>

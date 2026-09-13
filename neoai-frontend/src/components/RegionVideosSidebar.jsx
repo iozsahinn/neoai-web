@@ -1,4 +1,4 @@
-﻿export function RegionVideosSidebar({
+export function RegionVideosSidebar({
   examinationId,
   examinationVideos,
   regions,
@@ -7,7 +7,8 @@
   showVideoMenu,
   onClose,
   onOpen,
-  onSelectRegion
+  onSelectRegion,
+  showRdsScore = true
 }) {
   return (
     <aside className={`selection-sidebar panel${showVideoMenu ? "" : " collapsed"}`}>
@@ -42,7 +43,14 @@
                     src={regionVideo?.thumbnail}
                   />
                   <div className="region-video-meta">
-                    <strong>{region.toUpperCase()}</strong>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                      <strong>{region.toUpperCase()}</strong>
+                      {showRdsScore && regionVideo?.rdsScore !== undefined ? (
+                        <span style={{ fontSize: "11px", color: "#6db0ff", fontWeight: 700, background: "rgba(109, 176, 255, 0.12)", padding: "1px 6px", borderRadius: "4px" }}>
+                          RDS: {regionVideo.rdsScore}
+                        </span>
+                      ) : null}
+                    </div>
                     <p>{regionVideo?.name || "No video"}</p>
                     <span className={`selection-status${isSelected ? " done" : ""}`}>
                       {isSelected ? "Frame selected" : "Select frame"}

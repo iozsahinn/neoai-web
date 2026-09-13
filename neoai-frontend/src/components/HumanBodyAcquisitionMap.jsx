@@ -1,4 +1,5 @@
 import { Box, Chip, Paper, Stack, Typography } from "@mui/material";
+import humanAnatomyImg from "../assets/human_anatomy.jpg";
 
 export function HumanBodyAcquisitionMap({
   handSpo2Value = 98,
@@ -55,11 +56,29 @@ export function HumanBodyAcquisitionMap({
         />
       </Stack>
 
-      {/* Body Vector SVG Canvas */}
+      {/* Body Vector & Anatomy Image Container */}
       <Box sx={{ flex: 1, position: "relative", display: "flex", justifyContent: "center", alignItems: "center", my: 1, zIndex: 1 }}>
+        {/* Realistic 3D Human Muscular Anatomy Figure Image */}
+        <img
+          src={humanAnatomyImg}
+          alt="Human Muscular Anatomy Model"
+          style={{
+            position: "absolute",
+            width: "100%",
+            height: "100%",
+            maxHeight: 520,
+            objectFit: "contain",
+            transform: "translateY(-36px)",
+            filter: "brightness(1.08) contrast(1.15) drop-shadow(0 0 18px rgba(56, 189, 248, 0.35))",
+            mixBlendMode: "screen",
+            opacity: 0.95,
+            pointerEvents: "none"
+          }}
+        />
+
         <svg
           viewBox="0 0 260 520"
-          style={{ width: "100%", height: "100%", maxHeight: 520, filter: "drop-shadow(0 0 10px rgba(56, 189, 248, 0.15))" }}
+          style={{ width: "100%", height: "100%", maxHeight: 520, position: "relative", zIndex: 2, filter: "drop-shadow(0 0 10px rgba(56, 189, 248, 0.15))" }}
         >
           <defs>
             {/* Arrow Marker Green (Hand) */}
@@ -94,80 +113,60 @@ export function HumanBodyAcquisitionMap({
           </defs>
 
           {/* Background Grid & Radar Circles */}
-          <circle cx="130" cy="250" r="220" fill="none" stroke="rgba(56, 189, 248, 0.05)" strokeWidth="1" strokeDasharray="3 3" />
-          <circle cx="130" cy="250" r="140" fill="none" stroke="rgba(56, 189, 248, 0.08)" strokeWidth="1" />
+          <circle cx="130" cy="214" r="220" fill="none" stroke="rgba(56, 189, 248, 0.05)" strokeWidth="1" strokeDasharray="3 3" />
+          <circle cx="130" cy="214" r="140" fill="none" stroke="rgba(56, 189, 248, 0.08)" strokeWidth="1" />
           <line x1="130" y1="20" x2="130" y2="500" stroke="rgba(255, 255, 255, 0.05)" strokeDasharray="2 4" />
-          <line x1="20" y1="250" x2="240" y2="250" stroke="rgba(255, 255, 255, 0.05)" strokeDasharray="2 4" />
+          <line x1="20" y1="214" x2="240" y2="214" stroke="rgba(255, 255, 255, 0.05)" strokeDasharray="2 4" />
 
-          {/* Stylized Human Body Silhouette */}
-          <g fill="none" stroke="rgba(56, 189, 248, 0.35)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round">
-            {/* Head */}
-            <circle cx="130" cy="42" r="20" fill="rgba(15, 23, 42, 0.7)" stroke="rgba(56, 189, 248, 0.5)" strokeWidth="2" />
-            <path d="M 124 62 L 124 72 L 136 72 L 136 62" fill="none" />
-
-            {/* Torso & Shoulders */}
-            <path d="M 124 72 L 95 82 C 90 90, 85 110, 85 130 C 85 170, 92 210, 96 240 L 164 240 C 168 210, 175 170, 175 130 C 175 110, 170 90, 165 82 L 136 72" fill="rgba(15, 23, 42, 0.5)" />
-
-            {/* Left Arm (Viewer's Left - Hand Sensor Site) */}
-            <path d="M 95 82 L 65 140 L 45 220 L 38 238" strokeWidth="2.5" stroke="rgba(74, 222, 128, 0.6)" fill="none" />
-            <circle cx="38" cy="238" r="7" fill="rgba(74, 222, 128, 0.2)" stroke="#4ade80" strokeWidth="1.5" />
-
-            {/* Right Arm (Viewer's Right) */}
-            <path d="M 165 82 L 195 140 L 215 220 L 222 238" strokeWidth="2.5" fill="none" />
-            <circle cx="222" cy="238" r="6" fill="rgba(56, 189, 248, 0.2)" stroke="rgba(56, 189, 248, 0.4)" />
-
-            {/* Pelvic / Hips */}
-            <path d="M 96 240 L 96 265 L 164 265 L 164 240 Z" fill="rgba(15, 23, 42, 0.6)" />
-
-            {/* Left Leg (Viewer's Left - Foot Sensor Site) */}
-            <path d="M 105 265 L 102 360 L 96 460 L 90 480" strokeWidth="3" stroke="rgba(192, 132, 252, 0.7)" fill="none" />
-            <path d="M 90 480 L 74 484" stroke="rgba(192, 132, 252, 0.8)" strokeWidth="2.5" />
-
-            {/* Right Leg (Viewer's Right) */}
-            <path d="M 155 265 L 158 360 L 165 460 L 172 480" strokeWidth="3" fill="none" />
+          {/* Futuristic Target Reticles */}
+          <g fill="none" opacity="0.7">
+            <circle cx="118" cy="110" r="14" stroke="#38bdf8" strokeWidth="1" strokeDasharray="3 3" />
+            <circle cx="58" cy="225" r="14" stroke="#4ade80" strokeWidth="1" strokeDasharray="3 3" />
+            <circle cx="104" cy="435" r="14" stroke="#c084fc" strokeWidth="1" strokeDasharray="3 3" />
           </g>
 
           {/* --- SENSOR ACQUISITION NODES & PULSE ANIMATIONS --- */}
 
           {/* 1. CHEST ECG LEAD II NODE */}
           <g>
-            <circle cx="120" cy="115" class="pulse-ring-ecg" fill="none" stroke="#38bdf8" strokeWidth="2" />
-            <circle cx="120" cy="115" r="5" fill="#38bdf8" />
-            <circle cx="120" cy="115" r="9" fill="none" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="2 2" />
-            <text x="120" y="100" fill="#38bdf8" fontSize="10" fontWeight="bold" textAnchor="middle">
+            <circle cx="118" cy="110" class="pulse-ring-ecg" fill="none" stroke="#38bdf8" strokeWidth="2" />
+            <circle cx="118" cy="110" r="5" fill="#38bdf8" />
+            <circle cx="118" cy="110" r="9" fill="none" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="2 2" />
+            <rect x="78" y="78" width="80" height="20" rx="4" fill="rgba(15, 23, 42, 0.85)" stroke="#38bdf8" strokeWidth="1" />
+            <text x="118" y="92" fill="#38bdf8" fontSize="9.5" fontWeight="bold" textAnchor="middle">
               ECG Lead II
             </text>
           </g>
 
           {/* 2. HAND SPO2 ACQUISITION NODE (Upper Limb) */}
           <g>
-            <circle cx="38" cy="238" class="pulse-ring-hand" fill="none" stroke="#4ade80" strokeWidth="2" />
-            <circle cx="38" cy="238" r="6" fill="#4ade80" />
-            <circle cx="38" cy="238" r="11" fill="none" stroke="#4ade80" strokeWidth="1.5" strokeDasharray="3 2" />
+            <circle cx="58" cy="225" class="pulse-ring-hand" fill="none" stroke="#4ade80" strokeWidth="2" />
+            <circle cx="58" cy="225" r="6" fill="#4ade80" />
+            <circle cx="58" cy="225" r="11" fill="none" stroke="#4ade80" strokeWidth="1.5" strokeDasharray="3 2" />
 
             {/* Hand Node Callout Card */}
-            <rect x="2" y="178" width="76" height="34" rx="5" fill="rgba(6, 78, 59, 0.9)" stroke="#4ade80" strokeWidth="1.5" />
-            <text x="40" y="192" fill="#4ade80" fontSize="9" fontWeight="800" textAnchor="middle">HAND POX</text>
-            <text x="40" y="205" fill="#ffffff" fontSize="9.5" fontWeight="700" textAnchor="middle">{handSpo2Value}% SpO2</text>
+            <rect x="14" y="165" width="76" height="34" rx="5" fill="rgba(6, 78, 59, 0.9)" stroke="#4ade80" strokeWidth="1.5" />
+            <text x="52" y="179" fill="#4ade80" fontSize="9" fontWeight="800" textAnchor="middle">HAND POX</text>
+            <text x="52" y="192" fill="#ffffff" fontSize="9.5" fontWeight="700" textAnchor="middle">{handSpo2Value}% SpO2</text>
           </g>
 
           {/* 3. FOOT SPO2 ACQUISITION NODE (Lower Limb) */}
           <g>
-            <circle cx="90" cy="480" class="pulse-ring-foot" fill="none" stroke="#c084fc" strokeWidth="2" />
-            <circle cx="90" cy="480" r="6" fill="#c084fc" />
-            <circle cx="90" cy="480" r="11" fill="none" stroke="#c084fc" strokeWidth="1.5" strokeDasharray="3 2" />
+            <circle cx="104" cy="435" class="pulse-ring-foot" fill="none" stroke="#c084fc" strokeWidth="2" />
+            <circle cx="104" cy="435" r="6" fill="#c084fc" />
+            <circle cx="104" cy="435" r="11" fill="none" stroke="#c084fc" strokeWidth="1.5" strokeDasharray="3 2" />
 
             {/* Foot Node Callout Card */}
-            <rect x="52" y="418" width="76" height="34" rx="5" fill="rgba(88, 28, 135, 0.9)" stroke="#c084fc" strokeWidth="1.5" />
-            <text x="90" y="432" fill="#c084fc" fontSize="9" fontWeight="800" textAnchor="middle">FOOT POX</text>
-            <text x="90" y="445" fill="#ffffff" fontSize="9.5" fontWeight="700" textAnchor="middle">{footSpo2Value}% SpO2</text>
+            <rect x="66" y="375" width="76" height="34" rx="5" fill="rgba(88, 28, 135, 0.9)" stroke="#c084fc" strokeWidth="1.5" />
+            <text x="104" y="389" fill="#c084fc" fontSize="9" fontWeight="800" textAnchor="middle">FOOT POX</text>
+            <text x="104" y="402" fill="#ffffff" fontSize="9.5" fontWeight="700" textAnchor="middle">{footSpo2Value}% SpO2</text>
           </g>
 
           {/* --- DIRECTIONAL CONNECTING ARROWS POINTING TO SIGNAL RESULT GRAPHS --- */}
 
           {/* Arrow 1: Chest Node -> Channel 1 (ECG Graph) */}
           <path
-            d="M 125 115 C 160 115, 200 90, 252 90"
+            d="M 123 110 C 160 110, 200 85, 252 80"
             fill="none"
             stroke="#38bdf8"
             strokeWidth="2"
@@ -177,7 +176,7 @@ export function HumanBodyAcquisitionMap({
 
           {/* Arrow 2: Hand Node -> Channel 2A (Hand PPG Graph) */}
           <path
-            d="M 45 238 C 110 238, 170 260, 252 260"
+            d="M 66 225 C 120 225, 175 240, 252 245"
             fill="none"
             stroke="#4ade80"
             strokeWidth="2.5"
@@ -187,7 +186,7 @@ export function HumanBodyAcquisitionMap({
 
           {/* Arrow 3: Foot Node -> Channel 2B (Foot PPG Graph) */}
           <path
-            d="M 98 475 C 150 475, 200 440, 252 430"
+            d="M 112 435 C 160 435, 205 425, 252 425"
             fill="none"
             stroke="#c084fc"
             strokeWidth="2.5"

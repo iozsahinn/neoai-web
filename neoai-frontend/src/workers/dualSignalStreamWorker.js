@@ -8,7 +8,7 @@
 let isStreaming = false;
 let ecgBuffer = [];
 let ppgBuffer = [];
-let sampleRateHz = 250;
+let sampleRateHz = 500;
 let timeOffsetMs = 0;
 let filterConfig = {
   ecgNotch: true,
@@ -124,7 +124,7 @@ self.onmessage = function (e) {
     case "INIT_STREAM":
       ecgBuffer = payload.ecgData || [];
       ppgBuffer = payload.ppgData || [];
-      sampleRateHz = payload.sampleRateHz || 250;
+      sampleRateHz = payload.sampleRateHz || 500;
       timeOffsetMs = payload.timeOffsetMs || 0;
       if (payload.filterConfig) {
         filterConfig = { ...filterConfig, ...payload.filterConfig };

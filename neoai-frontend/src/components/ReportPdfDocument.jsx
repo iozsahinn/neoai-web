@@ -191,42 +191,37 @@ export function ReportPdfDocument({ reportData }) {
           <Text style={styles.sectionTitle}>3. Selected Module Results by Frame</Text>
           {regionRows.map((row) => (
             <View key={row.region} style={styles.frameBlock} wrap={false}>
-              <Text style={styles.frameLabel}>{row.region.toUpperCase()}</Text>
+              <Text style={styles.frameLabel}>
+                {row.region.toUpperCase()}{row.frameIndex !== null && row.frameIndex !== undefined ? ` (Frame #${row.frameIndex + 1})` : ""}
+              </Text>
               {row.image ? <Image src={row.image} style={styles.frameImage} /> : null}
-              {isBLineSelected ? (
-                <>
-                  <Text style={styles.moduleHeading}>B-LINE</Text>
-                  <View style={styles.table}>
-                  <View style={styles.tableRow}>
-                    {renderCell("B-LINE Metric", "50%", true)}
-                    {renderCell("Value", "50%", true, true)}
-                  </View>
-                  <View style={styles.tableRow}>
-                    {renderCell("Count", "50%")}
-                    {renderCell(String(row.bLineCount), "50%", false, true, true)}
-                  </View>
-                  </View>
-                </>
-              ) : null}
-              {isRdsSelected ? (
-                <>
-                  <Text style={styles.moduleHeading}>RDS-SCORE</Text>
-                  <View style={styles.table}>
-                  <View style={styles.tableRow}>
-                    {renderCell("RDS-SCORE Metric", "50%", true)}
-                    {renderCell("Value", "50%", true, true)}
-                  </View>
-                  <View style={styles.tableRow}>
-                    {renderCell("Score", "50%")}
-                    {renderCell(String(row.regionScore), "50%", false, true)}
-                  </View>
-                  <View style={styles.tableRow}>
-                    {renderCell("Returned value", "50%", false, false, true)}
-                    {renderCell("Integer score", "50%", false, true, true)}
-                  </View>
-                  </View>
-                </>
-              ) : null}
+              <Text style={styles.moduleHeading}>B-LINE</Text>
+              <View style={styles.table}>
+                <View style={styles.tableRow}>
+                  {renderCell("B-LINE Metric", "50%", true)}
+                  {renderCell("Value", "50%", true, true)}
+                </View>
+                <View style={styles.tableRow}>
+                  {renderCell("Count", "50%")}
+                  {renderCell(String(row.bLineCount ?? "-"), "50%", false, true, true)}
+                </View>
+              </View>
+
+              <Text style={styles.moduleHeading}>RDS-SCORE</Text>
+              <View style={styles.table}>
+                <View style={styles.tableRow}>
+                  {renderCell("RDS-SCORE Metric", "50%", true)}
+                  {renderCell("Value", "50%", true, true)}
+                </View>
+                <View style={styles.tableRow}>
+                  {renderCell("Score", "50%")}
+                  {renderCell(String(row.regionScore ?? "-"), "50%", false, true)}
+                </View>
+                <View style={styles.tableRow}>
+                  {renderCell("Returned value", "50%", false, false, true)}
+                  {renderCell(row.regionScore !== "-" ? "Integer score" : "-", "50%", false, true, true)}
+                </View>
+              </View>
             </View>
           ))}
         </View>
