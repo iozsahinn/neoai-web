@@ -11,13 +11,16 @@ export function AppLayout() {
     location.pathname.startsWith("/preprocessing/") ||
     location.pathname.startsWith("/ai-module/") ||
     location.pathname.startsWith("/results/");
+  const isDecisionTreeRoute = location.pathname.startsWith("/decision-tree");
+  const isFullWidthRoute = isWorkspaceRoute || isDecisionTreeRoute;
   const isWorkflowRoute = [
     "/query",
     "/selection/",
     "/preprocessing/",
     "/ai-module/",
     "/results/",
-    "/report/"
+    "/report/",
+    "/decision-tree"
   ].some((routePrefix) => location.pathname.startsWith(routePrefix));
   const selectionMatch = matchPath("/selection/:patientId/:examinationId", location.pathname);
   const preprocessingMatch = matchPath("/preprocessing/:patientId/:examinationId", location.pathname);
@@ -60,8 +63,11 @@ export function AppLayout() {
         <AppHeader user={user} logout={logout} workflowMeta={workflowMeta} />
       </Box>
 
-      <Box component="main" className={`content ${isWorkspaceRoute ? "content-full content-selection-shell" : ""}`}>
-        {isWorkspaceRoute ? (
+      <Box
+        component="main"
+        className={`content ${isWorkspaceRoute ? "content-full content-selection-shell" : isFullWidthRoute ? "content-full" : ""}`}
+      >
+        {isFullWidthRoute ? (
           <Outlet />
         ) : (
           <Box className="content-centered">

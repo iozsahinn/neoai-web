@@ -1,3 +1,6 @@
+import { useState } from "react";
+import { parseAiBbox } from "../utils/imageOverlayUtils";
+
 export function ViewerStage({
   activeRegion,
   activeSelectedFrame,
@@ -34,6 +37,7 @@ export function ViewerStage({
   customRectangles,
   rdsScore
 }) {
+  const [imageAspectRatio, setImageAspectRatio] = useState(1.68);
   const activeFrameSrc =
     isActiveVideoReady && activeVideoFrames[Math.min(currentFrame, Math.max(activeVideoFrames.length - 1, 0))]
       ? activeVideoFrames[Math.min(currentFrame, Math.max(activeVideoFrames.length - 1, 0))]
@@ -41,22 +45,35 @@ export function ViewerStage({
   const displayedFrameSrc =
     viewerMode === "frame" && activeSelectedFrame ? activeSelectedFrame.thumbnail : activeFrameSrc;
 
-  // --- DYNAMIC RECTANGLE RENDERING ---
-  const rectangleOverlays = customRectangles?.map(rect => (
-    <div
-      key={rect.id}
-      style={{
-        position: 'absolute',
-        left: `${rect.topLeft.x}px`,
-        top: `${rect.topLeft.y}px`,
-        width: `${rect.bottomRight.x - rect.topLeft.x}px`,
-        height: `${rect.bottomRight.y - rect.topLeft.y}px`,
-        border: '3px solid #00FF00',
-        pointerEvents: 'none',
-        zIndex: 10
-      }}
-    />
-  ));
+  // --- DYNAMIC RECTANGLE RENDERING (PERCENTAGE & NORMALIZED COORDINATES) ---
+  const rectangleOverlays = customRectangles?.map((rawRect, idx) => {
+    const rect = parseAiBbox(rawRect, idx);
+    if (!rect) return null;
+
+    const left = typeof rect.leftPercent === "number" ? `${rect.leftPercent}%` : `${rect.topLeft?.x || 0}px`;
+    const top = typeof rect.topPercent === "number" ? `${rect.topPercent}%` : `${rect.topLeft?.y || 0}px`;
+    const width = typeof rect.widthPercent === "number" ? `${rect.widthPercent}%` : `${(rect.bottomRight?.x || 0) - (rect.topLeft?.x || 0)}px`;
+    const height = typeof rect.heightPercent === "number" ? `${rect.heightPercent}%` : `${(rect.bottomRight?.y || 0) - (rect.topLeft?.y || 0)}px`;
+
+    return (
+      <div
+        key={rect.id || `rect-${idx}`}
+        style={{
+          position: "absolute",
+          left,
+          top,
+          width,
+          height,
+          border: "2px solid #22c55e",
+          boxShadow: "0 0 0 1px rgba(15, 23, 42, 0.6), 0 0 8px rgba(34, 197, 94, 0.5)",
+          borderRadius: "4px",
+          pointerEvents: "none",
+          zIndex: 10,
+          boxSizing: "border-box"
+        }}
+      />
+    );
+  });
   // --- END ---
 
   const effectiveRdsScore =
@@ -74,27 +91,43 @@ export function ViewerStage({
         className="viewer-rds-badge"
         style={{
           position: "absolute",
-          top: "14px",
-          left: "14px",
-          background: "rgba(13, 22, 38, 0.88)",
-          backdropFilter: "blur(8px)",
-          border: "1px solid rgba(88, 166, 255, 0.35)",
-          padding: "5px 12px",
-          borderRadius: "6px",
+          top: "20px",
+          left: "20px",
+          background: "rgba(8, 15, 30, 0.94)",
+          backdropFilter: "blur(14px)",
+          border: "2px solid rgba(56, 189, 248, 0.65)",
+          padding: "10px 22px",
+          borderRadius: "10px",
           color: "#ffffff",
-          fontSize: "12px",
-          fontWeight: 700,
           display: "flex",
           alignItems: "center",
-          gap: "8px",
-          zIndex: 15,
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.4)"
+          gap: "16px",
+          zIndex: 25,
+          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(56, 189, 248, 0.3)"
         }}
       >
-        <span style={{ color: "#8b949e", fontSize: "10px", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+        <span
+          style={{
+            color: "#94a3b8",
+            fontSize: "14px",
+            fontWeight: 800,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase"
+          }}
+        >
           RDS Score
         </span>
-        <span style={{ color: "#58a6ff", fontSize: "14px", fontWeight: 800 }}>{effectiveRdsScore}</span>
+        <span
+          style={{
+            color: "#38bdf8",
+            fontSize: "28px",
+            fontWeight: 900,
+            lineHeight: 1,
+            textShadow: "0 0 14px rgba(56, 189, 248, 0.6)"
+          }}
+        >
+          {effectiveRdsScore}
+        </span>
       </div>
     ) : null;
 
@@ -124,8 +157,9 @@ export function ViewerStage({
       className="selection-frame-preview"
       style={{
         position: 'relative',
-        width: '100%',
+        width: 'auto',
         height: '100%',
+        aspectRatio: imageAspectRatio ? `${imageAspectRatio}` : undefined,
         transform: `translate(calc(-50% + ${panOffset.x}px), ${panOffset.y}px) rotate(${viewRotation}deg) scale(${zoomScale})`,
         transformOrigin: `${zoomOrigin.x}% ${zoomOrigin.y}%`
       }}
@@ -135,7 +169,13 @@ export function ViewerStage({
         draggable={false}
         ref={previewImageRef}
         src={frameSrc}
-        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+        onLoad={(event) => {
+          const { naturalWidth, naturalHeight } = event.currentTarget;
+          if (naturalWidth > 0 && naturalHeight > 0) {
+            setImageAspectRatio(naturalWidth / naturalHeight);
+          }
+        }}
+        style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block' }}
       />
       {rectangleOverlays}
     </div>

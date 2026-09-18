@@ -21,6 +21,7 @@ import { PatientQueryEcgPulseOximeterPage } from "./pages/PatientQueryEcgPulseOx
 import { ProfilePage } from "./pages/ProfilePage";
 import { ReportingPage } from "./pages/ReportingPage";
 import { LogsPage } from "./pages/LogsPage";
+import { LusDecisionTreePage } from "./pages/LusDecisionTreePage";
 
 function App() {
   return (
@@ -52,6 +53,8 @@ function App() {
           <Route path="results-pulse-oximeter/:reportId" element={<AiResultsPulseOximeterPage />} />
           <Route path="results-ecg-pulse-oximeter/:reportId" element={<AiResultsEcgPulseOximeterPage />} />
           <Route path="report/:reportId" element={<ReportingPage />} />
+          <Route path="decision-tree" element={<LusDecisionTreePage />} />
+          <Route path="decision-tree/:reportId" element={<LusDecisionTreePage />} />
           <Route
             path="admin"
             element={

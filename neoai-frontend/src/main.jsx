@@ -11,6 +11,7 @@ import "./styles/report-page.css";
 import "./styles/selection-page.css";
 import "./styles/auth.css";
 import "./styles/logs.css";
+import "./styles/lus-decision-tree.css";
 import { appTheme } from "./theme";
 import { ToastProvider } from "./context/ToastContext";
 
