@@ -566,6 +566,23 @@ export function ReportingPage() {
                 </tbody>
               </table>
             </div>
+            <div style={{ padding: "12px 18px", display: "flex", justifyContent: "flex-end", background: "rgba(125, 211, 252, 0.05)", borderTop: "1px solid rgba(148, 197, 255, 0.1)" }}>
+              <Link
+                to={`/decision-tree/${reportId}`}
+                state={location.state}
+                className="report-button"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  background: "rgba(125, 211, 252, 0.15)",
+                  borderColor: "rgba(125, 211, 252, 0.35)",
+                  color: "#7dd3fc"
+                }}
+              >
+                🌳 Inspect LUS Decision Tree &amp; Probabilities
+              </Link>
+            </div>
           </section>
           ) : null}
 

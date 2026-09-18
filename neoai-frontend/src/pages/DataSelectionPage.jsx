@@ -13,27 +13,29 @@ import { useViewerZoom } from "../hooks/useViewerZoom";
 import { getExaminationByIds } from "../services/mockApi";
 import { logSimpleAction, ActionTypes, completeAction } from "../services/actionLogger";
 import { resetWorkflowAfterStep, setActiveWorkflowContext, getActiveWorkflowContext } from "../utils/workflowState";
+import { parseAiBboxLines } from "../utils/imageOverlayUtils";
 
 const regions = ["r1", "r2", "r3", "r4", "r5", "r6"];
 const DEFAULT_MAGNIFIER_CONFIG = { size: 200, zoomFactor: 2 };
 const MAX_MAGNIFIER_CONFIG = { size: 500, zoomFactor: 8 };
 const MIN_MAGNIFIER_CONFIG = { size: 200, zoomFactor: 2 };
 
-// --- DYNAMIC RECTANGLE GENERATOR ---
+// --- DYNAMIC RECTANGLE GENERATOR (AI FORMAT: classId x1 y1 x2 y2 normalized [0.0, 1.0]) ---
 function generateRectanglesForFrame(frameNo, region) {
-  const rects = [];
-  const numRects = (frameNo % 3) + 1; // 1, 2, or 3 rectangles per frame
+  const numRects = (frameNo % 3) + 1; // 1, 2, or 3 detections
+  const rawLines = [];
 
   for (let i = 0; i < numRects; i++) {
-    const x = 50 + (frameNo % 150) + (i * 120);
-    const y = 50 + (i * 100);
-    rects.push({
-      id: `dyn-rect-${frameNo}-${i}`,
-      topLeft: { x: x, y: y },
-      bottomRight: { x: x + 100, y: y + 80 }
-    });
+    const classId = (i + frameNo) % 4; // 0, 1, 2, 3
+    const x1 = Math.min(0.82, 0.15 + ((frameNo * 7 + i * 26) % 60) / 100);
+    const y1 = Math.min(0.72, 0.18 + (i * 20) / 100);
+    const x2 = Math.min(0.96, x1 + 0.16 + ((frameNo + i) % 6) / 100);
+    const y2 = Math.min(0.92, y1 + 0.32 + ((frameNo * 2) % 12) / 100);
+
+    rawLines.push(`${classId} ${x1.toFixed(6)} ${y1.toFixed(6)} ${x2.toFixed(6)} ${y2.toFixed(6)}`);
   }
-  return rects;
+
+  return parseAiBboxLines(rawLines);
 }
 // --- END ---
 

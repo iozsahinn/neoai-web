@@ -1,0 +1,838 @@
+/* ==========================================================================
+   LUS Decision Tree & Probabilistic Reporting Styles (Full Width Layout)
+   ========================================================================== */
+
+.lus-decision-tree-page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 8px 12px 80px;
+  max-width: 100%;
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Header */
+.lus-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: var(--panel-strong);
+  border: 1px solid var(--panel-border);
+  border-radius: 18px;
+  padding: 24px 32px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.lus-badge-stack {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.lus-tag {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(125, 211, 252, 0.16);
+  color: var(--accent);
+  border: 1px solid rgba(125, 211, 252, 0.3);
+}
+
+.lus-tag.secondary {
+  background: rgba(168, 85, 247, 0.14);
+  color: #c084fc;
+  border-color: rgba(168, 85, 247, 0.28);
+}
+
+.lus-page-header h1 {
+  margin: 0 0 6px;
+  font-size: 1.8rem;
+  color: #f8fafc;
+}
+
+.lus-patient-summary {
+  margin: 0;
+  font-size: 0.96rem;
+  color: var(--muted);
+}
+
+.lus-header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.lus-pill-btn {
+  padding: 11px 20px;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  border: 1px solid rgba(148, 197, 255, 0.2);
+  transition: all 0.2s ease;
+}
+
+.lus-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--accent);
+}
+
+.lus-pill-btn.active {
+  background: rgba(14, 165, 233, 0.2);
+  color: var(--accent);
+  border-color: rgba(14, 165, 233, 0.5);
+}
+
+/* ==========================================================================
+   Simulator Controls (Top Panel)
+   ========================================================================== */
+.lus-sim-section {
+  background: rgba(11, 27, 47, 0.85);
+  border: 1px solid rgba(125, 211, 252, 0.22);
+  border-radius: 18px;
+  padding: 22px 30px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.lus-sim-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.lus-sim-header h3 {
+  margin: 0 0 4px;
+  font-size: 1.22rem;
+  color: #f1f5f9;
+}
+
+.lus-sim-subtitle {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.lus-reset-button {
+  padding: 7px 16px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 197, 255, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lus-reset-button:hover {
+  color: #fff;
+  border-color: rgba(148, 197, 255, 0.5);
+}
+
+.lus-scenarios-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(148, 197, 255, 0.1);
+}
+
+.scenarios-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.scenarios-chips {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.lus-scenario-chip {
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 500;
+  background: rgba(30, 41, 59, 0.7);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 197, 255, 0.18);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lus-scenario-chip:hover {
+  background: rgba(14, 165, 233, 0.22);
+  color: #fff;
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.lus-sliders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: 18px;
+}
+
+.lus-slider-item {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 197, 255, 0.12);
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.slider-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.88rem;
+}
+
+.slider-name {
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slider-val {
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(125, 211, 252, 0.12);
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.84rem;
+}
+
+.lus-slider-input {
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(148, 197, 255, 0.2);
+  outline: none;
+  padding: 0;
+  margin: 4px 0;
+  cursor: pointer;
+}
+
+.lus-slider-input::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(125, 211, 252, 0.7);
+  transition: transform 0.1s;
+}
+
+.lus-slider-input::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+}
+
+.slider-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+/* ==========================================================================
+   Full Width Decision Tree Flowchart (Enlarged & Prominent)
+   ========================================================================== */
+.lus-tree-panel.full-width {
+  background: var(--panel-strong);
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  padding: 56px 44px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.lus-diagram-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.lus-diagram-titlebar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-bottom: 2px solid rgba(148, 197, 255, 0.22);
+  padding-bottom: 22px;
+}
+
+.lus-diagram-titlebar h2 {
+  margin: 0;
+  font-size: 2.35rem;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.lus-diagram-caption {
+  font-size: 1.05rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* Diagram Boxes (Significantly Taller & Elongated) */
+.lus-box {
+  background: #0d1a2d;
+  border: 1.5px solid #718096;
+  border-radius: 14px;
+  padding: 28px 24px;
+  text-align: center;
+  position: relative;
+  transition: all 0.2s ease;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 125px;
+  box-sizing: border-box;
+}
+
+.lus-box.decision-box {
+  background: #0a1728;
+  border: 2px solid #94a3b8;
+  color: #f8fafc;
+}
+
+.lus-box.root-box {
+  min-width: 360px;
+  max-width: 460px;
+  min-height: 145px;
+  margin: 0 auto;
+  border-width: 2.5px;
+  border-color: #38bdf8;
+  box-shadow: 0 0 28px rgba(56, 189, 248, 0.35);
+  padding: 28px 40px;
+}
+
+.lus-box.root-box .box-title {
+  font-size: 1.35rem;
+}
+
+.box-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  display: block;
+  line-height: 1.45;
+}
+
+.box-sub-probs {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.prob-badge {
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 999px;
+}
+
+.prob-badge.pos {
+  background: rgba(34, 197, 94, 0.18);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.prob-badge.neg {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+/* Terminal Outcome Boxes (Noticeably Taller & Spacious) */
+.lus-box.outcome-box {
+  background: #334155;
+  border: 2.5px solid #64748b;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  padding: 28px 24px;
+  min-height: 135px;
+}
+
+.lus-box.outcome-box:hover {
+  transform: translateY(-4px);
+  border-color: #38bdf8;
+  box-shadow: 0 10px 28px rgba(56, 189, 248, 0.42);
+}
+
+.lus-box.outcome-box.selected {
+  background: #1e293b;
+  border-color: #38bdf8;
+  box-shadow: 0 0 30px rgba(56, 189, 248, 0.55), inset 0 0 16px rgba(56, 189, 248, 0.22);
+}
+
+.outcome-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.outcome-score {
+  font-size: 1.05rem;
+  font-weight: 800;
+  padding: 5px 14px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  color: #38bdf8;
+}
+
+/* Severity Callouts (Taller, elongated dashed boxes below outcomes) */
+.severity-callout {
+  border: 1.5px dashed #64748b;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 10px;
+  padding: 16px 18px;
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  line-height: 1.6;
+  text-align: center;
+  margin-top: 14px;
+  min-height: 90px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.severity-callout strong {
+  color: #fca5a5;
+  display: inline;
+  margin-right: 4px;
+}
+
+/* Connectors & Hierarchy */
+.diagram-row.row-root {
+  display: flex;
+  justify-content: center;
+}
+
+.diagram-fork-lines {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 50px;
+  margin: 20px 0 36px;
+}
+
+.fork-branch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  transition: all 0.25s ease;
+}
+
+.fork-tag {
+  font-size: 0.96rem;
+  font-weight: 700;
+  padding: 7px 22px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(148, 197, 255, 0.25);
+  margin-bottom: 12px;
+}
+
+.branch-left .fork-tag {
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.35);
+}
+
+.branch-right .fork-tag {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.fork-branch.active-path .fork-tag {
+  background: rgba(56, 189, 248, 0.25);
+  color: #38bdf8;
+  border-color: #38bdf8;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
+}
+
+/* Main Split */
+.diagram-main-split {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 44px;
+  align-items: start;
+}
+
+.diagram-wing {
+  border: 1.5px solid rgba(148, 197, 255, 0.15);
+  border-radius: 20px;
+  padding: 40px 32px;
+  background: rgba(10, 18, 32, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  min-height: 880px;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.diagram-wing.active-wing {
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.1);
+}
+
+.diagram-node-center {
+  display: flex;
+  justify-content: center;
+}
+
+.sub-tag-line {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 14px;
+  display: block;
+  text-align: center;
+}
+
+.sub-tag-line.mini {
+  margin-bottom: 10px;
+  font-size: 0.82rem;
+}
+
+/* Left Subgrid (Normal Lung vs B Profile) */
+.diagram-left-subgrid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 24px;
+  margin-top: 24px;
+  align-items: start;
+}
+
+.mas-ttn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 28px;
+}
+
+.leaf-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.normal-container {
+  margin-top: 44px;
+}
+
+/* Right Subgrid (PTX vs Effusion / Consolidation) */
+.diagram-right-subgrid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 28px;
+  margin-top: 24px;
+  align-items: start;
+}
+
+.ptx-leaf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 28px;
+}
+
+.anechoic-effusion-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.consolidation-subgrid {
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px dashed rgba(148, 197, 255, 0.15);
+}
+
+.rds-shred-split {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 22px;
+  margin-top: 28px;
+  align-items: start;
+}
+
+.pneumonia-atelectasis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 28px;
+}
+
+/* Diagram Reference Box */
+.diagram-reference-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-top: 1px solid rgba(148, 197, 255, 0.15);
+  padding-top: 16px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.reference-box {
+  border: 1px solid #64748b;
+  border-radius: 6px;
+  padding: 10px 16px;
+  background: rgba(15, 23, 42, 0.6);
+  font-size: 0.78rem;
+}
+
+.reference-box h4 {
+  margin: 0 0 4px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #f1f5f9;
+}
+
+.reference-box p {
+  margin: 2px 0;
+  color: #cbd5e1;
+}
+
+.citation-text {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Active path lighting */
+.active-path .sub-tag-line {
+  color: #38bdf8;
+  font-weight: 800;
+}
+
+.active-path > .lus-box {
+  border-color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
+/* ==========================================================================
+   Bottom Results & Probability Distribution Section
+   ========================================================================== */
+.lus-results-bottom-section {
+  background: var(--panel-strong);
+  border: 1px solid var(--panel-border);
+  border-radius: 18px;
+  padding: 28px 30px;
+}
+
+.lus-prob-panel {
+  display: grid;
+  grid-template-columns: 1.1fr 1.2fr;
+  gap: 28px;
+  align-items: start;
+}
+
+@media (max-width: 992px) {
+  .lus-prob-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+.lus-primary-diagnosis-card {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(148, 197, 255, 0.12);
+  border-radius: 14px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lus-primary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.lus-section-subtitle {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.lus-diagnosis-title {
+  margin: 4px 0 0;
+  font-size: 1.45rem;
+  color: #f8fafc;
+}
+
+.lus-probability-badge {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.lus-path-badge {
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px 14px;
+  border-radius: 8px;
+  line-height: 1.45;
+}
+
+.lus-severity-box {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(148, 197, 255, 0.1);
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.lus-severity-box strong {
+  color: #f1f5f9;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.lus-severity-box p {
+  margin: 0;
+  color: #cbd5e1;
+}
+
+/* Distribution Bars (Right Column) */
+.lus-distribution-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lus-dist-header h3 {
+  margin: 0 0 2px;
+  font-size: 1.12rem;
+  color: #f1f5f9;
+}
+
+.lus-dist-hint {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.lus-bars-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lus-bar-row {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 197, 255, 0.09);
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lus-bar-row:hover {
+  background: rgba(30, 41, 59, 0.75);
+  border-color: rgba(148, 197, 255, 0.3);
+  transform: translateX(2px);
+}
+
+.lus-bar-row.selected {
+  border-color: var(--accent);
+  background: rgba(30, 41, 59, 0.95);
+  box-shadow: 0 0 14px rgba(125, 211, 252, 0.15);
+}
+
+.lus-bar-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+}
+
+.lus-bar-rank {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--muted);
+  width: 24px;
+}
+
+.lus-bar-name {
+  flex: 1;
+  font-weight: 600;
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lus-top-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.lus-bar-percent {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.lus-progress-track {
+  width: 100%;
+  height: 7px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.lus-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.35s ease;
+}
